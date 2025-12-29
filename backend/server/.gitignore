@@ -1,0 +1,43 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environment
+.venv/
+.env/
+*.env
+Pipfile.lock
+
+# VS Code settings
+.vscode/
+
+# Mac / Linux
+.DS_Store
+*.swp
+
+# Logs
+*.log
+
+# Database files (ako koristiš lokalne sqlite test baze)
+*.db
+*.sqlite3
+
+# Coverage reports
+htmlcov/
+.coverage
+*.cover
+*.py,cover
+
+# pytest cache
+.pytest_cache/
+
+# MyPy
+.mypy_cache/
+
+# JetBrains IDEs
+.idea/
+
+# Other
+*.bak
+*.tmp
