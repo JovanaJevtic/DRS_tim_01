@@ -18,7 +18,8 @@ class User(db.Model):
     broj = db.Column(db.String(20))
     lozinka = db.Column(db.String(255), nullable=False)
     uloga = db.Column(db.Enum(UlogaEnum), default=UlogaEnum.IGRAC)
-
+    profile_image = db.Column(db.String(255))
+    
     failed_attempts = db.Column(db.Integer, default=0)
     blocked_until = db.Column(db.DateTime)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
