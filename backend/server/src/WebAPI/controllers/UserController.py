@@ -9,6 +9,7 @@ from Domain.enums.Pol import PolEnum
 from datetime import datetime
 import os
 from werkzeug.utils import secure_filename
+from Services.EmailService import EmailService  # DODAJ OVO
 
 UPLOAD_FOLDER = "uploads"
 ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg", "gif"}
@@ -18,6 +19,8 @@ def allowed_file(filename):
 
 def create_user_controller(user_service: IUserService):
     user_bp = Blueprint("user_controller", __name__)
+    
+    email_service = EmailService()  # DODAJ OVO
 
     # -------------------- ADMIN ENDPOINTS --------------------
     @user_bp.route("/users", methods=["GET"])
@@ -41,8 +44,24 @@ def create_user_controller(user_service: IUserService):
         user = db.session.get(User, user_id)
         if not user:
             return jsonify({"success": False, "message": "Korisnik ne postoji"}), 404
+        
+        # Promeni ulogu
         user.uloga = UlogaEnum(new_role)
         db.session.commit()
+        
+        # POŠALJI EMAIL
+        user_name = f"{user.ime} {user.prezime}" if user.ime and user.prezime else user.email
+        email_sent = email_service.send_role_change_email(
+            user_email=user.email,
+            user_name=user_name,
+            new_role=new_role
+        )
+        
+        if email_sent:
+            print(f"✅ Email o promeni uloge poslat korisniku: {user.email}")
+        else:
+            print(f"⚠️ Email nije poslat, ali uloga je promenjena")
+        
         return jsonify({"success": True}), 200
 
     @user_bp.route("/users/<int:user_id>", methods=["DELETE"])

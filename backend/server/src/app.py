@@ -7,6 +7,7 @@ from Database.InitializeConnection import initialize_connection
 from WebAPI.controllers.AuthController import auth_bp
 from WebAPI.controllers.UserController import create_user_controller
 from Services.UserService import UserService
+from Services.EmailService import mail  
 
 load_dotenv()
 
@@ -21,6 +22,15 @@ def create_app():
             "allow_headers": ["Content-Type", "Authorization"]
         }
     })
+
+    app.config['MAIL_SERVER'] = os.getenv('MAIL_SERVER', 'smtp.gmail.com')
+    app.config['MAIL_PORT'] = int(os.getenv('MAIL_PORT', 587))
+    app.config['MAIL_USE_TLS'] = os.getenv('MAIL_USE_TLS', 'True') == 'True'
+    app.config['MAIL_USERNAME'] = os.getenv('MAIL_USERNAME')
+    app.config['MAIL_PASSWORD'] = os.getenv('MAIL_PASSWORD')
+    app.config['MAIL_DEFAULT_SENDER'] = os.getenv('MAIL_DEFAULT_SENDER')
+    
+    mail.init_app(app) 
 
     initialize_connection(app)
 
