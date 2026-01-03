@@ -108,6 +108,22 @@ const userService = {
       };
     }
   },
+
+  // Get my profile
+  async getMyProfile(): Promise<{ success: boolean; user?: User; message?: string }> {
+    try {
+      const response = await apiClient.get<{ success: boolean; user: User }>('/users/me');
+      return {
+        success: response.data.success,
+        user: response.data.user,
+      };
+    } catch (error: any) {
+      return {
+        success: false,
+        message: error.response?.data?.message || 'Greška pri učitavanju profila',
+      };
+    }
+  },
 };
 
 export default userService;
