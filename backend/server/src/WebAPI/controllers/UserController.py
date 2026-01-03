@@ -67,24 +67,33 @@ def create_user_controller(user_service: IUserService):
         if not user:
             return jsonify({"success": False, "message": "Korisnik ne postoji"}), 404
 
-        # Polja za izmjenu
-        if "ime" in data:
+        # Polja za izmjenu - ignoriši prazne stringove
+        if "ime" in data and data["ime"]:
             user.ime = data["ime"]
-        if "prezime" in data:
+        
+        if "prezime" in data and data["prezime"]:
             user.prezime = data["prezime"]
-        if "datum_rodjenja" in data:
-            user.datum_rodjenja = datetime.strptime(data["datum_rodjenja"], "%Y-%m-%d").date()
-        if "pol" in data:
+        
+        if "datum_rodjenja" in data and data["datum_rodjenja"]:
+            try:
+                user.datum_rodjenja = datetime.strptime(data["datum_rodjenja"], "%Y-%m-%d").date()
+            except ValueError:
+                return jsonify({"success": False, "message": "Neispravan format datuma"}), 400
+        
+        if "pol" in data and data["pol"]:
             pol_map = {"M": PolEnum.MUSKI, "Z": PolEnum.ZENSKI, "O": PolEnum.DRUGO}
             pol = pol_map.get(data["pol"].upper())
             if not pol:
                 return jsonify({"success": False, "message": "Neispravan pol"}), 400
             user.pol = pol
-        if "drzava" in data:
+        
+        if "drzava" in data and data["drzava"]:
             user.drzava = data["drzava"]
-        if "ulica" in data:
+        
+        if "ulica" in data and data["ulica"]:
             user.ulica = data["ulica"]
-        if "broj" in data:
+        
+        if "broj" in data and data["broj"]:
             user.broj = data["broj"]
 
         db.session.commit()
