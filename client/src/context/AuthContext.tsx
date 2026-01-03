@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import authService from '../services/authService';
+import websocketService from '../services/websocketService'; 
 import type { DecodedToken, RegisterData } from '../types';
 
 interface AuthContextType {
@@ -24,18 +25,35 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
+ useEffect(() => {
     // Provera da li je korisnik već prijavljen
     const initAuth = () => {
       if (authService.isAuthenticated()) {
         const currentUser = authService.getCurrentUser();
         setUser(currentUser);
         setIsAuthenticated(true);
+        
+        // Konektuj WebSocket ako je korisnik već prijavljen - DODAJ OVO
+        if (currentUser) {
+          websocketService.connect(currentUser.id);
+          
+          websocketService.onRoleChanged((data) => {
+            console.log('🔔 Uloga promenjena:', data);
+            const updatedUser = { ...currentUser, uloga: data.new_role as any };
+            setUser(updatedUser);
+            localStorage.setItem('user', JSON.stringify(updatedUser));
+            alert(data.message);
+          });
+        }
       }
       setLoading(false);
     };
 
     initAuth();
+    
+    return () => {
+      websocketService.off('role_changed');
+    };
   }, []);
 
   const login = async (email: string, password: string) => {
@@ -44,6 +62,18 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     if (result.success && result.user) {
       setUser(result.user);
       setIsAuthenticated(true);
+      
+      websocketService.connect(result.user.id);
+      
+      websocketService.onRoleChanged((data) => {
+        console.log('🔔 Uloga promenjena:', data);
+        // Ažuriraj user sa novom ulogom
+        const updatedUser = { ...result.user!, uloga: data.new_role as any };
+        setUser(updatedUser);
+        localStorage.setItem('user', JSON.stringify(updatedUser));
+        
+        alert(data.message);
+      });
     }
     
     return result;
@@ -55,6 +85,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
   const logout = () => {
     authService.logout();
+    websocketService.disconnect();
     setUser(null);
     setIsAuthenticated(false);
   };

@@ -11,6 +11,7 @@ import os
 import time
 from werkzeug.utils import secure_filename
 from Services.EmailService import EmailService
+from WebSocket.Events import emit_role_changed
 
 UPLOAD_FOLDER = "uploads"
 ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg", "gif"}
@@ -64,6 +65,9 @@ def create_user_controller(user_service: IUserService):
         else:
             print(f"⚠️ Email nije poslat, ali uloga je promenjena")
         
+        # Emituj WebSocket event
+        emit_role_changed(user_id, new_role)
+        
         return jsonify({"success": True}), 200
 
     @user_bp.route("/users/<int:user_id>", methods=["DELETE"])
@@ -78,6 +82,37 @@ def create_user_controller(user_service: IUserService):
         return jsonify({"success": True}), 200
 
     # -------------------- USER ENDPOINTS --------------------
+    @user_bp.route("/users/me", methods=["GET"])
+    @authenticate
+    def get_my_profile():
+        """Dohvati podatke trenutnog korisnika"""
+        user_id = request.user["id"]
+        user = db.session.get(User, user_id)
+        
+        if not user:
+            return jsonify({"success": False, "message": "Korisnik ne postoji"}), 404
+        
+        # Pripremi URL slike ako postoji
+        profile_image_url = None
+        if user.profile_image:
+            profile_image_url = f"/api/v1/uploads/{user.profile_image}"
+        
+        user_data = {
+            "id": user.id,
+            "ime": user.ime,
+            "prezime": user.prezime,
+            "email": user.email,
+            "datum_rodjenja": user.datum_rodjenja.isoformat() if user.datum_rodjenja else None,
+            "pol": user.pol.value if user.pol else None,
+            "drzava": user.drzava,
+            "ulica": user.ulica,
+            "broj": user.broj,
+            "uloga": user.uloga.value,
+            "profile_image": profile_image_url
+        }
+        
+        return jsonify({"success": True, "user": user_data}), 200
+
     @user_bp.route("/users/me", methods=["PUT"])
     @authenticate
     def update_my_profile():
@@ -119,36 +154,6 @@ def create_user_controller(user_service: IUserService):
 
         db.session.commit()
         return jsonify({"success": True, "message": "Profil ažuriran"}), 200
-
-    @user_bp.route("/users/me", methods=["GET"])
-    @authenticate
-    def get_my_profile():
-        """Dohvati podatke trenutnog korisnika"""
-        user_id = request.user["id"]
-        user = db.session.get(User, user_id)
-        
-        if not user:
-            return jsonify({"success": False, "message": "Korisnik ne postoji"}), 404
-        
-        profile_image_url = None
-        if user.profile_image:
-            profile_image_url = f"/api/v1/uploads/{user.profile_image}"
-        
-        user_data = {
-            "id": user.id,
-            "ime": user.ime,
-            "prezime": user.prezime,
-            "email": user.email,
-            "datum_rodjenja": user.datum_rodjenja.isoformat() if user.datum_rodjenja else None,
-            "pol": user.pol.value if user.pol else None,
-            "drzava": user.drzava,
-            "ulica": user.ulica,
-            "broj": user.broj,
-            "uloga": user.uloga.value,
-            "profile_image": profile_image_url
-        }
-        
-        return jsonify({"success": True, "user": user_data}), 200
 
     @user_bp.route("/users/me/avatar", methods=["POST"])
     @authenticate

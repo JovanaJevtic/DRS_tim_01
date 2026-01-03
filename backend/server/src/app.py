@@ -8,6 +8,8 @@ from WebAPI.controllers.AuthController import auth_bp
 from WebAPI.controllers.UserController import create_user_controller
 from Services.UserService import UserService
 from Services.EmailService import mail
+from WebSocket.SocketConfig import init_socketio, socketio
+import WebSocket.Events
 
 load_dotenv()
 
@@ -34,14 +36,15 @@ def create_app():
 
     initialize_connection(app)
 
+    init_socketio(app)
+
     user_service = UserService()
     user_controller = create_user_controller(user_service)
 
     app.register_blueprint(auth_bp, url_prefix="/api/v1/auth")
     app.register_blueprint(user_controller, url_prefix="/api/v1")
 
-    # APSOLUTNA PUTANJA do uploads foldera
-    # Idemo 1 folder gore iz src/ da bi došli do server/, pa u uploads/
+    
     UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.dirname(__file__)), "uploads")
     print(f"📁 UPLOAD_FOLDER: {UPLOAD_FOLDER}")  # Debug log
     
@@ -61,8 +64,4 @@ def create_app():
 
 if __name__ == "__main__":
     app = create_app()
-    app.run(
-        host="0.0.0.0",
-        port=int(os.getenv("PORT", 5000)),
-        debug=True
-    )
+    socketio.run(app, host="0.0.0.0", port=int(os.getenv("PORT", 5000)), debug=True)
