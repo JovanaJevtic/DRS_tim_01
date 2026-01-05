@@ -12,10 +12,10 @@ passlib = "*"
 python-dotenv = "*"
 flask-sqlalchemy = "*"
 bcrypt = "*"
-flask-mail = "*"
 flask-socketio = "*"
 requests = "*"
 pymongo = "*"
+flask-mail = "*"
 
 [dev-packages]
 

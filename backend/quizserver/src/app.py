@@ -1,11 +1,14 @@
 from flask import Flask
 from flask_cors import CORS
+from flask_mail import Mail
 from dotenv import load_dotenv
 import os
+from pathlib import Path
 from Database.MongoConnection import MongoConnection
 from WebAPI.controllers.QuizController import quiz_bp
 
-load_dotenv()
+env_path = Path(__file__).parent.parent / '.env'
+load_dotenv(dotenv_path=env_path)
 
 def create_app():
     app = Flask(__name__)
@@ -18,6 +21,23 @@ def create_app():
             "allow_headers": ["Content-Type", "Authorization"]
         }
     })
+    
+    # DEBUG - proveri da li .env učitava
+    print(f"🔍 .env path: {env_path}")
+    print(f"🔍 .env exists: {env_path.exists()}")
+    print(f"🔍 MAIL_USERNAME: {os.getenv('MAIL_USERNAME')}")
+    print(f"🔍 MAIL_DEFAULT_SENDER: {os.getenv('MAIL_DEFAULT_SENDER')}")
+    
+    # Email konfiguracija
+    app.config['MAIL_SERVER'] = os.getenv('MAIL_SERVER', 'smtp.gmail.com')
+    app.config['MAIL_PORT'] = int(os.getenv('MAIL_PORT', 587))
+    app.config['MAIL_USE_TLS'] = os.getenv('MAIL_USE_TLS', 'True') == 'True'
+    app.config['MAIL_USERNAME'] = os.getenv('MAIL_USERNAME', 'kvizplatforma@gmail.com')
+    app.config['MAIL_PASSWORD'] = os.getenv('MAIL_PASSWORD', 'kvizplatforma123')
+    app.config['MAIL_DEFAULT_SENDER'] = os.getenv('MAIL_DEFAULT_SENDER', 'kvizplatforma@gmail.com')
+    
+    # Inicijalizuj Mail
+    mail = Mail(app)
     
     # Inicijalizuj MongoDB
     MongoConnection.initialize()

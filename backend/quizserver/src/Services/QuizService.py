@@ -14,6 +14,14 @@ class QuizService(IQuizService):
     def __init__(self):
         self.quizzes_collection = MongoConnection.get_collection("quizzes")
         self.results_collection = MongoConnection.get_collection("quiz_results")
+        self.email_service = None
+    
+    def _get_email_service(self):
+        """Lazy loading email servisa (izbegava circular import)"""
+        if self.email_service is None:
+            from Services.EmailService import EmailService
+            self.email_service = EmailService()
+        return self.email_service
     
     def create_quiz(self, quiz_data: dict) -> Tuple[Optional[dict], Optional[str]]:
         """Kreira novi kviz (validacija je već urađena u Validator-u)"""
@@ -230,6 +238,17 @@ class QuizService(IQuizService):
             self.results_collection.insert_one(result_dto.to_dict())
             
             print(f"✅ Rezultat sačuvan: {ukupno_bodova}/{maksimalno_bodova} bodova ({tacnih_odgovora} tačnih odgovora)")
+            
+            # POŠALJI EMAIL SA REZULTATIMA
+            self._get_email_service().send_quiz_results(
+                igrac_email=submit_dto.igrac_email,
+                quiz_naziv=quiz["naziv"],
+                ukupno_bodova=ukupno_bodova,
+                maksimalno_bodova=maksimalno_bodova,
+                procenat=result_dto.procenat,
+                vrijeme_utroseno_sekunde=submit_dto.vrijeme_utroseno_sekunde
+            )
+            
             return result_dto.to_dict(), None
             
         except Exception as e:
