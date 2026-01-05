@@ -186,6 +186,7 @@ class QuizService(IQuizService):
             # Izračunaj bodove
             ukupno_bodova = 0
             maksimalno_bodova = sum(p["bodovi"] for p in quiz["pitanja"])
+            tacnih_odgovora = 0
             
             for pitanje in quiz["pitanja"]:
                 # Nađi odgovor igrača za ovo pitanje
@@ -196,16 +197,22 @@ class QuizService(IQuizService):
                 
                 if igrac_odgovor:
                     # Dohvati tačne odgovore za pitanje
-                    tacni_odgovori = set(
-                        odg["id"] for odg in pitanje["odgovori"] if odg.get("tacan")
-                    )
+                    tacni_odgovori_ids = [
+                        odg["id"] for odg in pitanje["odgovori"] if odg.get("tacan", False)
+                    ]
                     
-                    # Dohvati odgovore igrača
-                    igrac_odgovori_set = set(igrac_odgovor.get("odgovor_ids", []))
+                    # Dohvati odgovor igrača (može biti "odgovor_id" ili "odgovor_ids")
+                    igrac_odgovor_id = igrac_odgovor.get("odgovor_id")  # Pojedinačni odgovor
+                    igrac_odgovori_ids = igrac_odgovor.get("odgovor_ids", [])  # Višestruki odgovori
                     
-                    # Ako su identični, dodaj bodove
-                    if tacni_odgovori == igrac_odgovori_set:
+                    # Ako ima pojedinačni odgovor, pretvori ga u listu
+                    if igrac_odgovor_id:
+                        igrac_odgovori_ids = [igrac_odgovor_id]
+                    
+                    # Proveri da li su odgovori tačni
+                    if set(tacni_odgovori_ids) == set(igrac_odgovori_ids):
                         ukupno_bodova += pitanje["bodovi"]
+                        tacnih_odgovora += 1
             
             # Kreiraj rezultat
             result_dto = QuizResultDTO(
@@ -222,11 +229,13 @@ class QuizService(IQuizService):
             # Sačuvaj u bazu
             self.results_collection.insert_one(result_dto.to_dict())
             
-            print(f"✅ Rezultat sačuvan: {ukupno_bodova}/{maksimalno_bodova} bodova")
+            print(f"✅ Rezultat sačuvan: {ukupno_bodova}/{maksimalno_bodova} bodova ({tacnih_odgovora} tačnih odgovora)")
             return result_dto.to_dict(), None
             
         except Exception as e:
             print(f"❌ Greška pri obradi rezultata: {str(e)}")
+            import traceback
+            traceback.print_exc()
             return None, f"Greška: {str(e)}"
     
     def get_leaderboard(self, quiz_id: str) -> List[dict]:
@@ -240,9 +249,10 @@ class QuizService(IQuizService):
                 ])
             )
             
-            # Konvertuj ObjectId u string
-            for r in results:
+            # Konvertuj ObjectId u string i dodaj rank
+            for idx, r in enumerate(results, start=1):
                 r["_id"] = str(r["_id"])
+                r["rank"] = idx
             
             return results
             
