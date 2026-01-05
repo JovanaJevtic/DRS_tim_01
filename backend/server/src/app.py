@@ -10,6 +10,7 @@ from Services.UserService import UserService
 from Services.EmailService import mail
 from WebSocket.SocketConfig import init_socketio, socketio
 import WebSocket.Events
+from WebAPI.controllers.InternalController import internal_bp
 
 load_dotenv()
 
@@ -43,7 +44,7 @@ def create_app():
 
     app.register_blueprint(auth_bp, url_prefix="/api/v1/auth")
     app.register_blueprint(user_controller, url_prefix="/api/v1")
-
+    app.register_blueprint(internal_bp, url_prefix="/api/v1")
     
     UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.dirname(__file__)), "uploads")
     print(f"📁 UPLOAD_FOLDER: {UPLOAD_FOLDER}")  # Debug log

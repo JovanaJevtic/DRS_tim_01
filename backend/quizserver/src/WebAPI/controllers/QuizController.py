@@ -1,15 +1,17 @@
 from flask import Blueprint, request, jsonify
-import sys
-import os
 from Services.QuizService import QuizService
+from Domain.services.IServerCommunicationService import IServerCommunicationService
+from Services.ServerCommunicationService import ServerCommunicationService
 from Domain.services.IQuizService import IQuizService
+from WebAPI.validators.QuizValidator import QuizValidator
 from Middlewares.authentification.AuthMiddleware import authenticate
 from Middlewares.authorization.AuthorizeMiddleware import authorize
-from WebAPI.validators.QuizValidator import QuizValidator
+
 
 quiz_bp = Blueprint("quiz_controller", __name__)
 
 quiz_service: IQuizService = QuizService()
+server_comm: IServerCommunicationService = ServerCommunicationService()
 
 # -------------------- ENDPOINTS --------------------
 
@@ -35,6 +37,9 @@ def create_quiz():
         
         if error:
             return jsonify({"success": False, "message": error}), 400
+        
+        # OBAVESTI SERVER - WebSocket notifikacija adminu
+        server_comm.notify_new_quiz(quiz)
         
         return jsonify({"success": True, "quiz": quiz}), 201
         
@@ -108,10 +113,19 @@ def get_quiz_by_id(quiz_id):
 def approve_quiz(quiz_id):
     """Odobrava kviz (samo ADMIN)"""
     try:
+        # Prvo dohvati kviz da znaš ko je autor
+        quiz = quiz_service.get_quiz_by_id(quiz_id)
+        if not quiz:
+            return jsonify({"success": False, "message": "Kviz nije pronađen"}), 404
+        
+        # Odobri kviz
         success, error = quiz_service.approve_quiz(quiz_id)
         
         if not success:
             return jsonify({"success": False, "message": error}), 400
+        
+        # OBAVESTI SERVER - moderator će dobiti notifikaciju
+        server_comm.notify_quiz_approved(quiz_id, quiz['autor_id'])
         
         return jsonify({"success": True, "message": "Kviz odobren"}), 200
         
@@ -131,10 +145,19 @@ def reject_quiz(quiz_id):
         if not razlog:
             return jsonify({"success": False, "message": "Razlog odbijanja je obavezan"}), 400
         
+        # Prvo dohvati kviz da znaš ko je autor
+        quiz = quiz_service.get_quiz_by_id(quiz_id)
+        if not quiz:
+            return jsonify({"success": False, "message": "Kviz nije pronađen"}), 404
+        
+        # Odbij kviz
         success, error = quiz_service.reject_quiz(quiz_id, razlog)
         
         if not success:
             return jsonify({"success": False, "message": error}), 400
+        
+        # OBAVESTI SERVER - moderator će dobiti notifikaciju
+        server_comm.notify_quiz_rejected(quiz_id, razlog, quiz['autor_id'])
         
         return jsonify({"success": True, "message": "Kviz odbijen"}), 200
         
