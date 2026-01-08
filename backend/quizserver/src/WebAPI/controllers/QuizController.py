@@ -74,6 +74,27 @@ def get_all_quizzes():
     except Exception as e:
         return jsonify({"success": False, "message": str(e)}), 500
 
+@quiz_bp.route("/quiz/my-results", methods=["GET"])
+@authenticate
+@authorize("IGRAC")
+def get_my_results():
+    """Dohvata sve rezultate ulogovanog igrača"""
+    try:
+        igrac_id = request.user["id"]
+
+        results = quiz_service.get_results_for_player(igrac_id)
+
+        return jsonify({
+            "success": True,
+            "results": results
+        }), 200
+
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "message": str(e)
+        }), 500
+
 
 @quiz_bp.route("/quiz/<quiz_id>", methods=["GET"])
 @authenticate

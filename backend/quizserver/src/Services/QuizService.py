@@ -234,8 +234,11 @@ class QuizService(IQuizService):
                 vrijeme_utroseno_sekunde=submit_dto.vrijeme_utroseno_sekunde
             )
             
-            # Sačuvaj u bazu
-            self.results_collection.insert_one(result_dto.to_dict())
+            result_dict = result_dto.to_dict()
+            result_dict["created_at"] = datetime.utcnow()
+
+            self.results_collection.insert_one(result_dict)
+
             
             print(f"✅ Rezultat sačuvan: {ukupno_bodova}/{maksimalno_bodova} bodova ({tacnih_odgovora} tačnih odgovora)")
             
@@ -263,18 +266,51 @@ class QuizService(IQuizService):
             results = list(
                 self.results_collection.find({"quiz_id": quiz_id})
                 .sort([
-                    ("ukupno_bodova", -1),  # Prvo po bodovima (najviše)
-                    ("vrijeme_utroseno_sekunde", 1)  # Ako isti bodovi, po vremenu (najbrži)
+                   ("ukupno_bodova", -1),
+                   ("vrijeme_utroseno_sekunde", 1)
                 ])
             )
-            
-            # Konvertuj ObjectId u string i dodaj rank
+
+            leaderboard = []
+
             for idx, r in enumerate(results, start=1):
-                r["_id"] = str(r["_id"])
-                r["rank"] = idx
-            
-            return results
-            
+                leaderboard.append({
+                    "rank": idx,
+                    "igrac_email": r.get("igrac_email"),
+                    "bodovi": r.get("ukupno_bodova"),
+                    "vrijeme_utroseno": r.get("vrijeme_utroseno_sekunde")
+                })
+
+            return leaderboard
+
         except Exception as e:
-            print(f"❌ Greška pri dohvatanju rang liste: {str(e)}")
+            print(f"Greška pri dohvatanju rang liste: {str(e)}")
+            return []
+            
+    def get_results_for_player(self, igrac_id: int) -> List[dict]:
+        """Dohvata sve rezultate za ulogovanog igrača"""
+        try:
+            results = list(
+                self.results_collection
+               .find({"igrac_id": igrac_id})
+               .sort("created_at", -1)
+            )
+
+            formatted = []
+
+            for r in results:
+                formatted.append({
+                    "quiz_id": r.get("quiz_id"),
+                    "quiz_naziv": r.get("quiz_naziv"),
+                    "ukupno_bodova": r.get("ukupno_bodova"),
+                    "maksimalno_bodova": r.get("maksimalno_bodova"),
+                    "procenat": r.get("procenat"),
+                    "vrijeme_utroseno_sekunde": r.get("vrijeme_utroseno_sekunde"),
+                    "created_at": r.get("created_at")
+                })
+
+            return formatted
+
+        except Exception as e:
+            print(f"Greška pri dohvatanju rezultata igrača: {str(e)}")
             return []
