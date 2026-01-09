@@ -139,7 +139,7 @@ const AdminUsers = () => {
                         {user.id}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                        {user.imePrezime}
+                        {(user as any).ime_prezime}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {user.email}
