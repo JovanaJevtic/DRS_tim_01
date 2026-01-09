@@ -2,10 +2,34 @@
  * Validacione funkcije
  */
 
+// dopusteni mejlovi
+const ALLOWED_EMAIL_DOMAINS = [
+  "gmail.com",
+  "hotmail.com",
+  "outlook.com",
+  "live.com",
+  "yahoo.com",
+  "icloud.com",
+  "proton.me",
+  "protonmail.com",
+  "uns.ac.rs"
+];
+
+
 export const validateEmail = (email: string): boolean => {
+  if (!email) return false;
+
+  const trimmed = email.trim().toLowerCase();
+
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  return emailRegex.test(email);
+  if (!emailRegex.test(trimmed)) {
+    return false;
+  }
+
+  const domain = trimmed.split('@')[1];
+  return ALLOWED_EMAIL_DOMAINS.includes(domain);
 };
+
 
 export const validatePassword = (password: string): boolean => {
   // Minimum 6 karaktera

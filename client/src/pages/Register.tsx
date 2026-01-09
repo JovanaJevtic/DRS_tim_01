@@ -30,33 +30,62 @@ const Register = () => {
     setError('');
   };
 
-  const validateForm = (): boolean => {
-    // Obavezna polja
-    if (!formData.ime || !formData.prezime || !formData.email || !formData.password) {
-      setError('Ime, prezime, email i lozinka su obavezni');
-      return false;
-    }
+  const ALLOWED_EMAIL_DOMAINS = [
+  'gmail.com',
+  'hotmail.com',
+  'outlook.com',
+  'live.com',
+  'yahoo.com',
+  'icloud.com',
+  'protonmail.com',
+  'proton.me',
+  'uns.ac.rs',
+];
 
-    // Email validacija
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(formData.email)) {
-      setError('Unesite ispravan email');
-      return false;
-    }
+const validateForm = (): boolean => {
+  const email = formData.email.trim().toLowerCase();
 
-    // Lozinka validacija
-    if (formData.password.length < 6) {
-      setError('Lozinka mora imati najmanje 6 karaktera');
-      return false;
-    }
+  // obavezna polja
+  if (!formData.ime || !formData.prezime || !email || !formData.password) {
+    setError('Ime, prezime, email i lozinka su obavezni');
+    return false;
+  }
 
-    if (formData.password !== confirmPassword) {
-      setError('Lozinke se ne poklapaju');
-      return false;
-    }
+  // email mora imati @
+  if (!email.includes('@')) {
+    setError('Unesite ispravan email');
+    return false;
+  }
 
-    return true;
-  };
+  const parts = email.split('@');
+  if (parts.length !== 2 || !parts[1]) {
+    setError('Unesite ispravan email');
+    return false;
+  }
+
+  // dozvoljeni domeni
+  const domain = parts[1];
+  if (!ALLOWED_EMAIL_DOMAINS.includes(domain)) {
+    setError('Unesite ispravan email');
+    return false;
+  }
+
+  // lozinka
+  if (formData.password.length < 6) {
+    setError('Lozinka mora imati najmanje 6 karaktera');
+    return false;
+  }
+
+
+  if (formData.password !== confirmPassword) {
+    setError('Lozinke se ne poklapaju');
+    return false;
+  }
+
+  return true;
+};
+
+
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();

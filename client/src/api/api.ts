@@ -28,11 +28,20 @@ apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      // Token je istekao ili je nevazeci
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      window.location.href = '/login';
+      const url = error.config?.url ?? '';
+
+      const isAuthEndpoint =
+        url.includes('/auth/login') ||
+        url.includes('/auth/register');
+
+      // NE RADIMO redirect za pogrešnu lozinku
+      if (!isAuthEndpoint) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        window.location.href = '/login';
+      }
     }
+
     return Promise.reject(error);
   }
 );

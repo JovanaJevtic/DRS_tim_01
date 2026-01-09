@@ -1,62 +1,124 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+
+const LOCK_TIME_MS = 60_000;
 
 const Login = () => {
   const [formData, setFormData] = useState({
     email: '',
     password: '',
   });
+
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  const [attempts, setAttempts] = useState<Record<string, number>>({});
+  const [lockUntil, setLockUntil] = useState<number | null>(null);
+  const [secondsLeft, setSecondsLeft] = useState(0);
 
   const navigate = useNavigate();
   const { login } = useAuth();
 
+  /* ================= ODBROJAVANJE ================= */
+  useEffect(() => {
+    if (!lockUntil) return;
+
+    const interval = setInterval(() => {
+      const remaining = Math.ceil((lockUntil - Date.now()) / 1000);
+
+      if (remaining <= 0) {
+        setLockUntil(null);
+        setSecondsLeft(0);
+        setError('');
+      } else {
+        setSecondsLeft(remaining);
+      }
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [lockUntil]);
+
+  /* ================= INPUT ================= */
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({
-      ...formData,
+    setFormData(prev => ({
+      ...prev,
       [e.target.name]: e.target.value,
-    });
+    }));
     setError('');
   };
 
+  /* ================= SUBMIT ================= */
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setError('');
-    setLoading(true);
 
-    // Validacija
-    if (!formData.email || !formData.password) {
-      setError('Sva polja su obavezna');
+    if (lockUntil) return;
+
+    setLoading(true);
+    setError('');
+
+    const email = formData.email.trim().toLowerCase();
+
+    // Email basic check
+    if (!email.includes('@')) {
+      setError('Unesite ispravan email');
       setLoading(false);
       return;
     }
 
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(formData.email)) {
+    const domain = email.split('@')[1];
+    const ALLOWED_EMAIL_DOMAINS = [
+      'gmail.com',
+      'hotmail.com',
+      'outlook.com',
+      'live.com',
+      'yahoo.com',
+      'icloud.com',
+      'protonmail.com',
+      'proton.me',
+      'uns.ac.rs',
+    ];
+
+    if (!ALLOWED_EMAIL_DOMAINS.includes(domain)) {
       setError('Unesite ispravan email');
       setLoading(false);
       return;
     }
 
     try {
-      const result = await login(formData.email, formData.password);
+      const result = await login(email, formData.password);
 
       if (result.success) {
+        setAttempts(prev => ({ ...prev, [email]: 0 }));
         navigate('/dashboard');
       } else {
-        setError(result.message || 'Greška pri prijavljivanju');
+        const currentAttempts = (attempts[email] ?? 0) + 1;
+
+        setAttempts(prev => ({
+          ...prev,
+          [email]: currentAttempts,
+        }));
+
+        if (currentAttempts >= 3) {
+          setError('Pogrešna lozinka. Pristup je privremeno zabranjen.');
+          setLockUntil(Date.now() + LOCK_TIME_MS);
+          setSecondsLeft(60);
+        } else {
+          setError('Pogrešna lozinka');
+        }
       }
-    } catch (err) {
-      setError('Greška pri prijavljivanju. Pokušajte ponovo.');
+    } catch {
+      setError('Greška pri prijavljivanju');
     } finally {
       setLoading(false);
     }
   };
 
+  const isLocked = !!lockUntil;
+
+  /* ================= UI ================= */
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4">
       <div className="max-w-md w-full space-y-8">
         <div>
           <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
@@ -64,7 +126,10 @@ const Login = () => {
           </h2>
           <p className="mt-2 text-center text-sm text-gray-600">
             Ili{' '}
-            <Link to="/register" className="font-medium text-primary-600 hover:text-primary-500">
+            <Link
+              to="/register"
+              className="font-medium text-primary-600 hover:text-primary-500"
+            >
               registrujte se za novi nalog
             </Link>
           </p>
@@ -73,55 +138,56 @@ const Login = () => {
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           {error && (
             <div className="bg-red-50 border border-red-400 text-red-700 px-4 py-3 rounded">
-              {error}
+              <div>{error}</div>
+              {isLocked && (
+                <div className="mt-1 font-semibold">
+                  Pokušajte ponovo za {secondsLeft}s
+                </div>
+              )}
             </div>
           )}
 
           <div className="rounded-md shadow-sm space-y-4">
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
                 Email adresa
               </label>
               <input
-                id="email"
                 name="email"
                 type="email"
-                autoComplete="email"
                 required
+                disabled={isLocked}
                 value={formData.email}
                 onChange={handleChange}
-                className="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500 focus:z-10 sm:text-sm"
+                className="block w-full px-3 py-2 border border-gray-300 rounded-md"
                 placeholder="ime@example.com"
               />
             </div>
 
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
                 Lozinka
               </label>
               <input
-                id="password"
                 name="password"
                 type="password"
-                autoComplete="current-password"
                 required
+                disabled={isLocked}
                 value={formData.password}
                 onChange={handleChange}
-                className="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500 focus:z-10 sm:text-sm"
+                className="block w-full px-3 py-2 border border-gray-300 rounded-md"
                 placeholder="••••••••"
               />
             </div>
           </div>
 
-          <div>
-            <button
-              type="submit"
-              disabled={loading}
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {loading ? 'Prijavljivanje...' : 'Prijavi se'}
-            </button>
-          </div>
+          <button
+            type="submit"
+            disabled={loading || isLocked}
+            className="w-full flex justify-center py-2 px-4 rounded-md text-white bg-primary-600 disabled:opacity-50"
+          >
+            {loading ? 'Prijavljivanje...' : 'Prijavi se'}
+          </button>
         </form>
       </div>
     </div>

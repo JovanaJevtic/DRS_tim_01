@@ -58,26 +58,26 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
   const login = async (email: string, password: string) => {
     const result = await authService.login(email, password);
-    
+
     if (result.success && result.user) {
       setUser(result.user);
       setIsAuthenticated(true);
-      
+
       websocketService.connect(result.user.id);
-      
+
       websocketService.onRoleChanged((data) => {
         console.log('🔔 Uloga promenjena:', data);
-        // Ažuriraj user sa novom ulogom
         const updatedUser = { ...result.user!, uloga: data.new_role as any };
         setUser(updatedUser);
         localStorage.setItem('user', JSON.stringify(updatedUser));
-        
         alert(data.message);
       });
     }
-    
+
     return result;
-  };
+  
+};
+
 
   const register = async (userData: RegisterData) => {
     return await authService.register(userData);
