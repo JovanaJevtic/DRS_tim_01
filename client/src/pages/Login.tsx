@@ -20,7 +20,6 @@ const Login = () => {
   const navigate = useNavigate();
   const { login } = useAuth();
 
-  /* ================= ODBROJAVANJE ================= */
   useEffect(() => {
     if (!lockUntil) return;
 
@@ -39,7 +38,6 @@ const Login = () => {
     return () => clearInterval(interval);
   }, [lockUntil]);
 
-  /* ================= INPUT ================= */
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData(prev => ({
       ...prev,
@@ -48,7 +46,6 @@ const Login = () => {
     setError('');
   };
 
-  /* ================= SUBMIT ================= */
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
@@ -59,7 +56,6 @@ const Login = () => {
 
     const email = formData.email.trim().toLowerCase();
 
-    // Email basic check
     if (!email.includes('@')) {
       setError('Unesite ispravan email');
       setLoading(false);
@@ -116,7 +112,6 @@ const Login = () => {
 
   const isLocked = !!lockUntil;
 
-  /* ================= UI ================= */
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4">
       <div className="max-w-md w-full space-y-8">

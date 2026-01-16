@@ -1,8 +1,3 @@
-/**
- * Validacione funkcije
- */
-
-// dopusteni mejlovi
 const ALLOWED_EMAIL_DOMAINS = [
   "gmail.com",
   "hotmail.com",
@@ -14,7 +9,6 @@ const ALLOWED_EMAIL_DOMAINS = [
   "protonmail.com",
   "uns.ac.rs"
 ];
-
 
 export const validateEmail = (email: string): boolean => {
   if (!email) return false;
@@ -32,7 +26,6 @@ export const validateEmail = (email: string): boolean => {
 
 
 export const validatePassword = (password: string): boolean => {
-  // Minimum 6 karaktera
   return !!(password && password.length >= 6);
 };
 
@@ -56,10 +49,6 @@ export const validateFileSize = (file: File, maxSizeInMB: number): boolean => {
   const fileSizeInMB = file.size / (1024 * 1024);
   return fileSizeInMB <= maxSizeInMB;
 };
-
-/**
- * Helper funkcije za forme
- */
 
 export const getErrorMessage = (field: string, value: string): string => {
   if (!validateRequired(value)) {

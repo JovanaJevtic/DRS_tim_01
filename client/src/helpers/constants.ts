@@ -1,9 +1,5 @@
 import type { UserRole, Gender } from '../types';
 
-/**
- * Konstante korišćene širom aplikacije
- */
-
 export const USER_ROLES: Record<string, UserRole> = {
   IGRAC: 'IGRAC',
   MODERATOR: 'MODERATOR',
@@ -23,11 +19,9 @@ export const GENDERS: Record<Gender, string> = {
 };
 
 export const API_ENDPOINTS = {
-  // Auth
   LOGIN: '/auth/login',
   REGISTER: '/auth/register',
   
-  // Users
   USERS: '/users',
   MY_PROFILE: '/users/me',
   MY_AVATAR: '/users/me/avatar',

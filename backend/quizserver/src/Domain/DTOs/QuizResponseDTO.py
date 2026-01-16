@@ -2,7 +2,7 @@ class QuizResponseDTO:
     """DTO za slanje kviza klijentu"""
     
     def __init__(self, id, naziv, pitanja, trajanje_sekunde, autor_id, autor_email, status, razlog_odbijanja=None, created_at=None):
-        self.id = str(id)  # MongoDB ObjectId kao string
+        self.id = str(id)  
         self.naziv = naziv
         self.pitanja = pitanja
         self.trajanje_sekunde = trajanje_sekunde

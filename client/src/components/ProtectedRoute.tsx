@@ -23,7 +23,6 @@ const ProtectedRoute = ({ children, allowedRoles = [] }: ProtectedRouteProps) =>
     return <Navigate to="/login" replace />;
   }
 
-  // Ako su navedene dozvoljene uloge, proveri da li korisnik ima odgovarajuću ulogu
   if (allowedRoles.length > 0 && user && !allowedRoles.includes(user.uloga)) {
     return <Navigate to="/dashboard" replace />;
   }

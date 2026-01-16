@@ -65,7 +65,6 @@ def quiz_rejected():
         
         print(f" Kviz {quiz_id} odbijen, obaveštavam moderatora {moderator_id}")
         
-        # Emituj WebSocket event ka moderatoru
         socketio.emit('quiz_rejected', {
             'quiz_id': quiz_id,
             'razlog': razlog,

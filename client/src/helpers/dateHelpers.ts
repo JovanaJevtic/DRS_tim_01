@@ -1,7 +1,3 @@
-/**
- * Formatiranje datuma
- */
-
 export const formatDate = (dateString: string): string => {
   if (!dateString) return '';
   

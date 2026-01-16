@@ -17,7 +17,6 @@ class QuizResultDTO:
         self.started_at = started_at or datetime.utcnow()
         self.completed_at = completed_at or datetime.utcnow()
         
-        # Izračunaj procenat ODMAH u __init__
         if maksimalno_bodova > 0:
             self.procenat = round((ukupno_bodova / maksimalno_bodova) * 100, 1)
         else:
@@ -34,7 +33,7 @@ class QuizResultDTO:
             "ukupno_bodova": self.ukupno_bodova,
             "maksimalno_bodova": self.maksimalno_bodova,
             "vrijeme_utroseno_sekunde": self.vrijeme_utroseno_sekunde,
-            "procenat": self.procenat,  # ← Koristi self.procenat, ne računaj ponovo
+            "procenat": self.procenat, 
             "started_at": self.started_at,
             "completed_at": self.completed_at
         }

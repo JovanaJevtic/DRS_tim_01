@@ -25,9 +25,6 @@ const CreateQuiz = () => {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
-  // =========================
-  // VALIDACIJA (BACKEND MIRROR)
-  // =========================
   const validate = (): boolean => {
     // Naziv
     if (!naziv.trim()) {
@@ -40,19 +37,16 @@ const CreateQuiz = () => {
       return false;
     }
 
-    // Pitanja
     if (!pitanja || pitanja.length === 0) {
       setError("Kviz mora imati bar jedno pitanje");
       return false;
     }
 
-    // Trajanje
     if (!trajanje || trajanje < 10) {
       setError("Trajanje mora biti najmanje 10 sekundi");
       return false;
     }
 
-    // Validacija svakog pitanja
     for (let i = 0; i < pitanja.length; i++) {
       const p = pitanja[i];
 
@@ -90,9 +84,6 @@ const CreateQuiz = () => {
     return true;
   };
 
-  // =========================
-  // PITANJA
-  // =========================
   const addQuestion = () => {
     setPitanja(prev => [
       ...prev,
@@ -120,9 +111,6 @@ const CreateQuiz = () => {
     setPitanja(copy);
   };
 
-  // =========================
-  // ODGOVORI
-  // =========================
   const updateAnswerText = (qIndex: number, aIndex: number, tekst: string) => {
     const copy = [...pitanja];
     copy[qIndex].odgovori[aIndex] = {
@@ -151,9 +139,6 @@ const CreateQuiz = () => {
     setPitanja(copy);
   };
 
-  // =========================
-  // SUBMIT
-  // =========================
   const submit = async () => {
     if (!validate()) return;
 
@@ -170,9 +155,6 @@ const CreateQuiz = () => {
     }, 1200);
   };
 
-  // =========================
-  // UI
-  // =========================
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-3xl mx-auto py-10 px-4">

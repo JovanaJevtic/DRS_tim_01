@@ -81,7 +81,6 @@ def create_user_controller(user_service: IUserService):
         db.session.commit()
         return jsonify({"success": True}), 200
 
-    # -------------------- USER ENDPOINTS --------------------
     @user_bp.route("/users/me", methods=["GET"])
     @authenticate
     def get_my_profile():
@@ -92,7 +91,6 @@ def create_user_controller(user_service: IUserService):
         if not user:
             return jsonify({"success": False, "message": "Korisnik ne postoji"}), 404
         
-        # Pripremi URL slike ako postoji
         profile_image_url = None
         if user.profile_image:
             profile_image_url = f"/api/v1/uploads/{user.profile_image}"
@@ -123,7 +121,6 @@ def create_user_controller(user_service: IUserService):
         if not user:
             return jsonify({"success": False, "message": "Korisnik ne postoji"}), 404
 
-        # Polja za izmenu - ignoriši prazne stringove
         if "ime" in data and data["ime"]:
             user.ime = data["ime"]
         
@@ -165,20 +162,17 @@ def create_user_controller(user_service: IUserService):
         if file.filename == "":
             return jsonify({"success": False, "message": "Fajl nema ime"}), 400
 
-        # PROVERA FORMATA
         if not allowed_file(file.filename):
             return jsonify({"success": False, "message": "Nepodržan tip fajla. Dozvoljeni: PNG, JPG, JPEG, GIF"}), 400
 
-        # PROVERA VELIČINE (5MB)
         file.seek(0, os.SEEK_END)
         file_length = file.tell()
-        file.seek(0)  # Vrati na početak
+        file.seek(0)  
         
         if file_length > MAX_FILE_SIZE:
             size_mb = file_length / (1024 * 1024)
             return jsonify({"success": False, "message": f"Fajl je prevelik ({size_mb:.1f}MB). Maksimalna veličina: 5MB"}), 400
 
-        # SAČUVAJ FAJL sa jedinstvenim imenom
         filename = secure_filename(file.filename)
         unique_filename = f"{int(time.time())}_{filename}"
         upload_path = os.path.join(UPLOAD_FOLDER, unique_filename)
@@ -186,13 +180,11 @@ def create_user_controller(user_service: IUserService):
         os.makedirs(UPLOAD_FOLDER, exist_ok=True)
         file.save(upload_path)
 
-        # AŽURIRAJ KORISNIKA U BAZI
         user_id = request.user["id"]
         user = db.session.get(User, user_id)
-        user.profile_image = unique_filename  # Čuvaj samo ime fajla
+        user.profile_image = unique_filename  
         db.session.commit()
 
-        # VRATI URL SLIKE
         image_url = f"/api/v1/uploads/{unique_filename}"
         return jsonify({"success": True, "profile_image": image_url}), 200
 

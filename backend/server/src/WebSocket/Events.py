@@ -31,7 +31,6 @@ def handle_leave_user_room(data):
         leave_room(room)
         print(f"👤 Korisnik {user_id} napustio sobu: {room}")
 
-# Event za emitovanje kada se promeni uloga (poziva se iz UserController)
 def emit_role_changed(user_id, new_role):
     """Emituj event kada admin promeni ulogu korisnika"""
     room = f"user_{user_id}"

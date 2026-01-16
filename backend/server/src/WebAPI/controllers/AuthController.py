@@ -3,7 +3,6 @@ from Services.AuthService import AuthService
 from Domain.services.IAuthService import IAuthService
 
 auth_bp = Blueprint("auth", __name__, url_prefix="/api/auth")
-#auth_bp = Blueprint("auth", __name__)
 
 auth_service: IAuthService = AuthService()  
 

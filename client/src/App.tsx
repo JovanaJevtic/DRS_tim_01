@@ -2,17 +2,13 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-d
 import { AuthProvider } from "./context/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Navbar from "./components/Navbar";
-
 import Home from "./pages/Home";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
-
 import Dashboard from "./pages/Dashboard";
 import Profile from "./pages/Profile";
-
 import AdminUsers from "./pages/AdminUsers";
 import AdminQuizzes from "./pages/AdminQuizzes";
-
 import QuizDashboard from "./pages/QuizDashboard";
 import ModeratorQuizzes from "./pages/ModeratorQuizzes";
 import CreateQuiz from "./pages/CreateQuiz";

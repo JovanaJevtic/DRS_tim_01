@@ -3,7 +3,6 @@ import type { RegisterData, AuthResponse, DecodedToken } from '../types';
 import apiClient from '../api/api';
 
 const authService = {
-  // Login
   async login(email: string, password: string): Promise<AuthResponse & { user?: DecodedToken }> {
     try {
       const response = await apiClient.post<AuthResponse>('/auth/login', {
@@ -15,7 +14,6 @@ const authService = {
         const token = response.data.token;
         const decoded = jwtDecode<DecodedToken>(token);
         
-        // Cuvanje tokena i user podataka
         localStorage.setItem('token', token);
         localStorage.setItem('user', JSON.stringify({
           id: decoded.id,
@@ -35,7 +33,6 @@ const authService = {
     }
   },
 
-  // Register
   async register(userData: RegisterData): Promise<AuthResponse> {
     try {
       const response = await apiClient.post<AuthResponse>('/auth/register', userData);
@@ -52,13 +49,11 @@ const authService = {
     }
   },
 
-  // Logout
   logout(): void {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
   },
 
-  // Get current user from localStorage
   getCurrentUser(): DecodedToken | null {
     const userStr = localStorage.getItem('user');
     if (userStr) {
@@ -71,14 +66,12 @@ const authService = {
     return null;
   },
 
-  // Check if user is authenticated
   isAuthenticated(): boolean {
     const token = localStorage.getItem('token');
     if (!token) return false;
 
     try {
       const decoded = jwtDecode<DecodedToken>(token);
-      // Provera da li je token istekao
       if (decoded.exp * 1000 < Date.now()) {
         this.logout();
         return false;
@@ -89,7 +82,6 @@ const authService = {
     }
   },
 
-  // Get token
   getToken(): string | null {
     return localStorage.getItem('token');
   },

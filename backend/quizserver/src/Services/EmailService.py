@@ -12,7 +12,6 @@ class EmailService(IEmailService):
                          procenat: float, vrijeme_utroseno_sekunde: int) -> bool:
         """Šalje email sa rezultatima kviza"""
         try:
-            # Formatiranje vremena
             if vrijeme_utroseno_sekunde:
                 minuta = vrijeme_utroseno_sekunde // 60
                 sekundi = vrijeme_utroseno_sekunde % 60
@@ -20,7 +19,6 @@ class EmailService(IEmailService):
             else:
                 vrijeme_text = "N/A"
             
-            # Kreiranje email poruke
             subject = f"Rezultati kviza: {quiz_naziv}"
             
             body = f"""
@@ -49,11 +47,11 @@ Quiz Platforma Tim
             )
             
             mail.send(msg)
-            print(f"✅ Email poslat na: {igrac_email}")
+            print(f" Email poslat na: {igrac_email}")
             return True
             
         except Exception as e:
-            print(f"❌ Greška pri slanju email-a: {str(e)}")
+            print(f" Greška pri slanju email-a: {str(e)}")
             import traceback
             traceback.print_exc()
             return False

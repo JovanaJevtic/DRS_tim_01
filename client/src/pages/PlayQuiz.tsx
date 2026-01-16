@@ -2,9 +2,6 @@ import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import quizService from "../services/quizService";
 
-/* =========================
-   TIPOVI
-========================= */
 
 type Answer = {
   id: string;
@@ -30,9 +27,6 @@ type PlayerAnswer = {
   odgovor_ids: string[];
 };
 
-/* =========================
-   KOMPONENTA
-========================= */
 
 const PlayQuiz = () => {
   const { id } = useParams();

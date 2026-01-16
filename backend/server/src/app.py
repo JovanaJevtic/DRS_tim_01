@@ -47,13 +47,12 @@ def create_app():
     app.register_blueprint(internal_bp, url_prefix="/api/v1")
     
     UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.dirname(__file__)), "uploads")
-    print(f"📁 UPLOAD_FOLDER: {UPLOAD_FOLDER}")  # Debug log
     
     @app.route("/api/v1/uploads/<filename>", methods=["GET"])
     def serve_upload(filename):
         """Serviranje uploaded fajlova"""
-        print(f"🖼️ Tražena slika: {filename}")  # Debug log
-        print(f"📂 Tražim u: {UPLOAD_FOLDER}")  # Debug log
+        print(f"🖼️ Tražena slika: {filename}")  
+        print(f"📂 Tražim u: {UPLOAD_FOLDER}") 
         try:
             return send_from_directory(UPLOAD_FOLDER, filename)
         except FileNotFoundError:

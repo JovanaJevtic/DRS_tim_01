@@ -9,7 +9,6 @@ const apiClient = axios.create({
   },
 });
 
-// Request interceptor - dodaje JWT token
 apiClient.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('token');
@@ -23,7 +22,6 @@ apiClient.interceptors.request.use(
   }
 );
 
-// Response interceptor - obradjuje greske
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
@@ -34,7 +32,6 @@ apiClient.interceptors.response.use(
         url.includes('/auth/login') ||
         url.includes('/auth/register');
 
-      // NE RADIMO redirect za pogrešnu lozinku
       if (!isAuthEndpoint) {
         localStorage.removeItem('token');
         localStorage.removeItem('user');

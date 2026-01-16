@@ -7,11 +7,10 @@ class SubmitQuizDTO:
         self.quiz_id = quiz_id
         self.igrac_id = igrac_id
         self.igrac_email = igrac_email
-        self.odgovori = odgovori  # Lista odgovora: [{"pitanje_id": 1, "odgovor_id": "a"}, ...]
+        self.odgovori = odgovori 
         self.vreme_pocetka = vreme_pocetka
         self.vreme_kraja = vreme_kraja
         
-        # Ako vrijeme_utroseno_sekunde nije prosleđeno, ali jesu start/end, izračunaj ga
         if vrijeme_utroseno_sekunde is not None:
             self.vrijeme_utroseno_sekunde = vrijeme_utroseno_sekunde
         elif vreme_pocetka and vreme_kraja:
@@ -23,7 +22,6 @@ class SubmitQuizDTO:
     def _calculate_time_difference(start_str, end_str):
         """Izračunava razliku u sekundama između dva timestamp-a"""
         try:
-            # Podrška za različite formate (sa/bez Z)
             start = datetime.fromisoformat(start_str.replace('Z', '+00:00'))
             end = datetime.fromisoformat(end_str.replace('Z', '+00:00'))
             return int((end - start).total_seconds())

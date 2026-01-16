@@ -14,7 +14,6 @@ class MongoConnection:
         cls._client = MongoClient(mongo_uri)
         cls._db = cls._client[db_name]
         
-        # Test konekcije
         try:
             cls._client.server_info()
             print(f"\x1b[36m[QuizDB@1.0.0]\x1b[0m MongoDB connected to '{db_name}'")

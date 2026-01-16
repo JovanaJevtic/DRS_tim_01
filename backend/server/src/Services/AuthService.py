@@ -70,7 +70,7 @@ class AuthService(IAuthService):
             ime=data["ime"],
             prezime=data["prezime"],
             email=data["email"],
-            lozinka=hashed_password.decode('utf-8'),  # Čuvaj kao string
+            lozinka=hashed_password.decode('utf-8'),  
             datum_rodjenja=data.get("datum_rodjenja"),
             pol = pol_value,
             drzava=data.get("drzava"),

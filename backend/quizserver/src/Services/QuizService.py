@@ -26,10 +26,8 @@ class QuizService(IQuizService):
     def create_quiz(self, quiz_data: dict) -> Tuple[Optional[dict], Optional[str]]:
         """Kreira novi kviz (validacija je već urađena u Validator-u)"""
         try:
-            # Kreiraj DTO
             dto = CreateQuizDTO.from_dict(quiz_data)
             
-            # Pripremi dokument za MongoDB
             quiz_document = {
                 "naziv": dto.naziv,
                 "pitanja": dto.pitanja,
@@ -41,13 +39,10 @@ class QuizService(IQuizService):
                 "created_at": datetime.utcnow()
             }
             
-            # Ubaci u MongoDB
             result = self.quizzes_collection.insert_one(quiz_document)
             
-            # Dohvati kreirani kviz
             created_quiz = self.quizzes_collection.find_one({"_id": result.inserted_id})
             
-            # Konvertuj u response DTO
             response = QuizResponseDTO(
                 id=created_quiz["_id"],
                 naziv=created_quiz["naziv"],
@@ -64,20 +59,18 @@ class QuizService(IQuizService):
             return response.to_dict(), None
             
         except Exception as e:
-            print(f"❌ Greška pri kreiranju kviza: {str(e)}")
+            print(f" Greška pri kreiranju kviza: {str(e)}")
             return None, f"Greška pri kreiranju kviza: {str(e)}"
     
     def get_all_quizzes(self, status: Optional[str] = None) -> List[dict]:
         """Dohvata sve kvizove"""
         try:
-            # Filtriraj po statusu ako je prosleđen
             query = {}
             if status:
                 query["status"] = status
             
             quizzes = list(self.quizzes_collection.find(query).sort("created_at", -1))
             
-            # Konvertuj u response DTOs
             return [
                 QuizResponseDTO(
                     id=quiz["_id"],
@@ -183,46 +176,37 @@ class QuizService(IQuizService):
     def process_quiz_submission(self, submission_data: dict) -> Tuple[Optional[dict], Optional[str]]:
         """Obrađuje odgovore igrača"""
         try:
-            # Kreiraj DTO
             submit_dto = SubmitQuizDTO.from_dict(submission_data)
             
-            # Dohvati kviz
             quiz = self.quizzes_collection.find_one({"_id": ObjectId(submit_dto.quiz_id)})
             if not quiz:
                 return None, "Kviz nije pronađen"
             
-            # Izračunaj bodove
             ukupno_bodova = 0
             maksimalno_bodova = sum(p["bodovi"] for p in quiz["pitanja"])
             tacnih_odgovora = 0
             
             for pitanje in quiz["pitanja"]:
-                # Nađi odgovor igrača za ovo pitanje
                 igrac_odgovor = next(
                     (o for o in submit_dto.odgovori if o["pitanje_id"] == pitanje["id"]), 
                     None
                 )
                 
                 if igrac_odgovor:
-                    # Dohvati tačne odgovore za pitanje
                     tacni_odgovori_ids = [
                         odg["id"] for odg in pitanje["odgovori"] if odg.get("tacan", False)
                     ]
                     
-                    # Dohvati odgovor igrača (može biti "odgovor_id" ili "odgovor_ids")
                     igrac_odgovor_id = igrac_odgovor.get("odgovor_id")  # Pojedinačni odgovor
                     igrac_odgovori_ids = igrac_odgovor.get("odgovor_ids", [])  # Višestruki odgovori
                     
-                    # Ako ima pojedinačni odgovor, pretvori ga u listu
                     if igrac_odgovor_id:
                         igrac_odgovori_ids = [igrac_odgovor_id]
                     
-                    # Proveri da li su odgovori tačni
                     if set(tacni_odgovori_ids) == set(igrac_odgovori_ids):
                         ukupno_bodova += pitanje["bodovi"]
                         tacnih_odgovora += 1
             
-            # Kreiraj rezultat
             result_dto = QuizResultDTO(
                 quiz_id=submit_dto.quiz_id,
                 quiz_naziv=quiz["naziv"],
@@ -242,7 +226,6 @@ class QuizService(IQuizService):
             
             print(f"✅ Rezultat sačuvan: {ukupno_bodova}/{maksimalno_bodova} bodova ({tacnih_odgovora} tačnih odgovora)")
             
-            # POŠALJI EMAIL SA REZULTATIMA
             self._get_email_service().send_quiz_results(
                 igrac_email=submit_dto.igrac_email,
                 quiz_naziv=quiz["naziv"],

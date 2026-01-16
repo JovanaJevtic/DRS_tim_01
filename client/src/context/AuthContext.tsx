@@ -26,14 +26,12 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [loading, setLoading] = useState(true);
 
  useEffect(() => {
-    // Provera da li je korisnik već prijavljen
     const initAuth = () => {
       if (authService.isAuthenticated()) {
         const currentUser = authService.getCurrentUser();
         setUser(currentUser);
         setIsAuthenticated(true);
         
-        // Konektuj WebSocket ako je korisnik već prijavljen - DODAJ OVO
         if (currentUser) {
           websocketService.connect(currentUser.id);
           

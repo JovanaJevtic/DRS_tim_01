@@ -45,13 +45,11 @@ const Register = () => {
 const validateForm = (): boolean => {
   const email = formData.email.trim().toLowerCase();
 
-  // obavezna polja
   if (!formData.ime || !formData.prezime || !email || !formData.password) {
     setError('Ime, prezime, email i lozinka su obavezni');
     return false;
   }
 
-  // email mora imati @
   if (!email.includes('@')) {
     setError('Unesite ispravan email');
     return false;
@@ -63,19 +61,16 @@ const validateForm = (): boolean => {
     return false;
   }
 
-  // dozvoljeni domeni
   const domain = parts[1];
   if (!ALLOWED_EMAIL_DOMAINS.includes(domain)) {
     setError('Unesite ispravan email');
     return false;
   }
 
-  // lozinka
   if (formData.password.length < 6) {
     setError('Lozinka mora imati najmanje 6 karaktera');
     return false;
   }
-
 
   if (formData.password !== confirmPassword) {
     setError('Lozinke se ne poklapaju');
@@ -98,7 +93,6 @@ const validateForm = (): boolean => {
     setLoading(true);
 
     try {
-      // Priprema podataka za backend
       const registrationData: RegisterData = {
         ime: formData.ime,
         prezime: formData.prezime,

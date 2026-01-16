@@ -57,8 +57,7 @@ const Profile = () => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
       
-      // VALIDACIJA NA FRONTEND-U
-      const maxSize = 5 * 1024 * 1024; // 5MB
+      const maxSize = 5 * 1024 * 1024; 
       if (file.size > maxSize) {
         setMessage({ type: 'error', text: 'Fajl je prevelik. Maksimalna veličina: 5MB' });
         return;
@@ -88,7 +87,6 @@ const Profile = () => {
       setMessage({ type: 'success', text: result.message });
       setSelectedFile(null);
       
-      // AŽURIRAJ SLIKU
       if (result.profileImage) {
         const baseUrl = import.meta.env.VITE_API_URL.split('/api/v1')[0];
         const fullImageUrl = `${baseUrl}${result.profileImage}`;

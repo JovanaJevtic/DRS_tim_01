@@ -21,8 +21,8 @@ def create_app():
         resources={
             r"/api/*": {
                 "origins": [
-                    "http://localhost:5173",  # frontend (Vite)
-                    "http://localhost:5000",  # auth/server
+                    "http://localhost:5173",  
+                    "http://localhost:5000", 
                 ],
                 "methods": ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
                 "allow_headers": ["Content-Type", "Authorization"],
@@ -43,7 +43,6 @@ def create_app():
     app.config["MAIL_PASSWORD"] = os.getenv("MAIL_PASSWORD")
     app.config["MAIL_DEFAULT_SENDER"] = os.getenv("MAIL_DEFAULT_SENDER")
 
-    # Inicijalizuj Mail
     Mail(app)
 
     MongoConnection.initialize()

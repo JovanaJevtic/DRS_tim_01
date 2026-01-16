@@ -19,7 +19,6 @@ interface UploadAvatarResponse {
 }
 
 const userService = {
-  // Get all users (Admin only)
   async getAllUsers(): Promise<UserListResponse> {
     try {
       const response = await apiClient.get<User[]>('/users');
@@ -36,7 +35,6 @@ const userService = {
     }
   },
 
-  // Update user role (Admin only)
   async updateUserRole(userId: number, uloga: string): Promise<UserActionResponse> {
     try {
       const response = await apiClient.patch<ApiResponse>(`/users/${userId}/role`, { uloga });
@@ -52,7 +50,6 @@ const userService = {
     }
   },
 
-  // Delete user (Admin only)
   async deleteUser(userId: number): Promise<UserActionResponse> {
     try {
       const response = await apiClient.delete<ApiResponse>(`/users/${userId}`);
@@ -68,7 +65,6 @@ const userService = {
     }
   },
 
-  // Update my profile
   async updateMyProfile(profileData: ProfileUpdateData): Promise<UserActionResponse> {
     try {
       const response = await apiClient.put<ApiResponse>('/users/me', profileData);
@@ -84,7 +80,6 @@ const userService = {
     }
   },
 
-  // Upload avatar
   async uploadAvatar(file: File): Promise<UploadAvatarResponse> {
     try {
       const formData = new FormData();
@@ -109,7 +104,6 @@ const userService = {
     }
   },
 
-  // Get my profile
   async getMyProfile(): Promise<{ success: boolean; user?: User; message?: string }> {
     try {
       const response = await apiClient.get<{ success: boolean; user: User }>('/users/me');

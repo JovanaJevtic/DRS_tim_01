@@ -6,9 +6,6 @@ const ModeratorQuizzes = () => {
   const [quizzes, setQuizzes] = useState<Quiz[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // =========================
-  // UČITAJ MOJE KVIZOVE
-  // =========================
   useEffect(() => {
     const loadQuizzes = async () => {
       try {
@@ -24,9 +21,6 @@ const ModeratorQuizzes = () => {
     loadQuizzes();
   }, []);
 
-  // =========================
-  // OBRIŠI KVIZ
-  // =========================
   const deleteQuiz = async (id: string) => {
     const confirmed = window.confirm(
       "Da li si sigurna da želiš da obrišeš ovaj kviz?"

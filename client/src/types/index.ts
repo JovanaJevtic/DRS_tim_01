@@ -17,7 +17,6 @@ export interface User {
 export type UserRole = 'IGRAC' | 'MODERATOR' | 'ADMINISTRATOR';
 export type Gender = 'M' | 'Z' | 'O';
 
-// Auth types
 export interface LoginCredentials {
   email: string;
   password: string;
@@ -49,14 +48,12 @@ export interface DecodedToken {
   exp: number;
 }
 
-// API Response types
 export interface ApiResponse<T = any> {
   success: boolean;
   message?: string;
   data?: T;
 }
 
-// Profile update
 export interface ProfileUpdateData {
   ime?: string;
   prezime?: string;
@@ -67,7 +64,6 @@ export interface ProfileUpdateData {
   broj?: string;
 }
 
-// Toast types
 export type ToastType = 'success' | 'error' | 'warning' | 'info';
 
 export interface ToastMessage {

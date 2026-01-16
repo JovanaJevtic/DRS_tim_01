@@ -24,7 +24,6 @@ class WebSocketService {
 
     this.socket.on('connect', () => {
       console.log('✅ WebSocket konektovan');
-      // Pridruži se privatnoj sobi za ovog korisnika
       this.socket?.emit('join_user_room', { user_id: this.userId });
     });
 
@@ -57,13 +56,11 @@ class WebSocketService {
     }
   }
 
-  // Slušaj promenu uloge
   onRoleChanged(callback: (data: { user_id: number; new_role: string; message: string }) => void) {
     this.socket?.on('role_changed', callback);
   }
 
 
-  // Ukloni event listener
   off(eventName: string) {
     this.socket?.off(eventName);
   }
