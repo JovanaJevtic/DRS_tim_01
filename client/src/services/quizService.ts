@@ -3,7 +3,6 @@ import type { Quiz } from "../models/Quiz";
 import type { PlayableQuiz } from "../types/PlayableQuiz";
 
 const quizService = {
-  
   async getAll(status?: string): Promise<Quiz[]> {
     const res = await quizApi.get("/quiz/all", {
       params: status ? { status } : {},
@@ -16,7 +15,6 @@ const quizService = {
     return res.data.quiz;
   },
 
- 
   async create(data: {
     naziv: string;
     pitanja: any[];
@@ -30,7 +28,6 @@ const quizService = {
     await quizApi.delete(`/quiz/${id}`);
   },
 
-  
   async approve(id: string): Promise<void> {
     await quizApi.patch(`/quiz/${id}/approve`);
   },
@@ -60,11 +57,14 @@ const quizService = {
     return res.data.leaderboard;
   },
 
-  async getMyResults() {
-  const res = await quizApi.get("/quiz/my-results");
-  return res.data.results;
-}
+  async generateReport(quizId: string): Promise<void> {
+    await quizApi.post(`/quiz/${quizId}/report`);
+  },
 
+  async getMyResults() {
+    const res = await quizApi.get("/quiz/my-results");
+    return res.data.results;
+  },
 };
 
 export default quizService;

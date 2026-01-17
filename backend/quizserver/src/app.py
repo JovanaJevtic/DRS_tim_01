@@ -1,4 +1,3 @@
-
 from dotenv import load_dotenv
 from pathlib import Path
 
@@ -7,7 +6,7 @@ load_dotenv(dotenv_path=env_path)
 
 from flask import Flask
 from flask_cors import CORS
-from flask_mail import Mail
+from Services.EmailService import mail
 import os
 
 from Database.MongoConnection import MongoConnection
@@ -22,14 +21,13 @@ def create_app():
             r"/api/*": {
                 "origins": [
                     "http://localhost:5173",  
-                    "http://localhost:5000", 
+                    "http://localhost:5000",  
                 ],
                 "methods": ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
                 "allow_headers": ["Content-Type", "Authorization"],
             }
         },
     )
-
 
     print(" .env path:", env_path)
     print(" .env exists:", env_path.exists())
@@ -43,12 +41,11 @@ def create_app():
     app.config["MAIL_PASSWORD"] = os.getenv("MAIL_PASSWORD")
     app.config["MAIL_DEFAULT_SENDER"] = os.getenv("MAIL_DEFAULT_SENDER")
 
-    Mail(app)
+    mail.init_app(app)
 
     MongoConnection.initialize()
 
     app.register_blueprint(quiz_bp, url_prefix="/api/v1")
-
 
     @app.route("/health", methods=["GET"])
     def health_check():

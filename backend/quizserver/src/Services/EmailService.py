@@ -55,3 +55,36 @@ Quiz Platforma Tim
             import traceback
             traceback.print_exc()
             return False
+
+
+    def send_quiz_report(self, admin_email: str, quiz_naziv: str, pdf_bytes: bytes, filename: str) -> bool:
+        """Šalje PDF izvještaj administratoru kao attachment."""
+        try:
+            subject = f"PDF izvještaj - {quiz_naziv}"
+
+            body = f"""Pozdrav,
+
+U prilogu se nalazi PDF izvještaj o rezultatima kviza \"{quiz_naziv}\".
+
+--
+Quiz Platforma Tim
+"""
+
+            msg = Message(
+                subject=subject,
+                recipients=[admin_email],
+                body=body,
+                sender=os.getenv("MAIL_DEFAULT_SENDER"),
+            )
+
+            msg.attach(filename=filename, content_type="application/pdf", data=pdf_bytes)
+
+            mail.send(msg)
+            print(f"📨 PDF izvještaj poslat na: {admin_email}")
+            return True
+
+        except Exception as e:
+            print(f"❌ Greška pri slanju PDF izvještaja: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            return False

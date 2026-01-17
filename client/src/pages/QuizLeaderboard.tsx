@@ -14,6 +14,7 @@ const QuizLeaderboard = () => {
 
   const [results, setResults] = useState<LeaderboardEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [pdfLoading, setPdfLoading] = useState(false);
 
   useEffect(() => {
     const loadLeaderboard = async () => {
@@ -31,6 +32,19 @@ const QuizLeaderboard = () => {
     loadLeaderboard();
   }, [id, navigate]);
 
+  const generatePdfReport = async () => {
+    if (!id) return;
+    try {
+      setPdfLoading(true);
+      await quizService.generateReport(id);
+      alert("PDF izvještaj je poslat na vaš email.");
+    } catch (e) {
+      alert("Greška pri generisanju PDF izvještaja");
+    } finally {
+      setPdfLoading(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -43,7 +57,20 @@ const QuizLeaderboard = () => {
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-4xl mx-auto py-10 px-4">
         <div className="bg-white shadow-xl rounded-lg p-8">
-          <h2 className="text-2xl font-bold mb-6">Rang lista</h2>
+
+   
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-2xl font-bold">Rang lista</h2>
+
+        
+            <button
+              onClick={generatePdfReport}
+              disabled={pdfLoading}
+              className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 disabled:opacity-50"
+            >
+              {pdfLoading ? "Generišem..." : "PDF izveštaj"}
+            </button>
+          </div>
 
           {results.length === 0 ? (
             <p className="text-gray-600">

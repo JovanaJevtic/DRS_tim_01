@@ -228,3 +228,27 @@ def get_leaderboard(quiz_id):
         
     except Exception as e:
         return jsonify({"success": False, "message": str(e)}), 500
+    
+
+@quiz_bp.route("/quiz/<quiz_id>/report", methods=["POST"])
+@authenticate
+@authorize("ADMINISTRATOR")
+def generate_report(quiz_id):
+    """Administrator generiše PDF izvještaj o rezultatima kviza (stiže na mail)."""
+    try:
+        admin_email = request.user.get("email")
+        if not admin_email:
+            return jsonify({"success": False, "message": "Nedostaje admin email"}), 400
+
+        success, error = quiz_service.send_quiz_report_to_admin(quiz_id, admin_email)
+
+        if not success:
+            return jsonify({"success": False, "message": error}), 400
+
+        return jsonify({
+            "success": True,
+            "message": "Izvještaj je generisan i poslat na vaš email."
+        }), 200
+
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)}), 500

@@ -197,8 +197,8 @@ class QuizService(IQuizService):
                         odg["id"] for odg in pitanje["odgovori"] if odg.get("tacan", False)
                     ]
                     
-                    igrac_odgovor_id = igrac_odgovor.get("odgovor_id")  # Pojedinačni odgovor
-                    igrac_odgovori_ids = igrac_odgovor.get("odgovor_ids", [])  # Višestruki odgovori
+                    igrac_odgovor_id = igrac_odgovor.get("odgovor_id")
+                    igrac_odgovori_ids = igrac_odgovor.get("odgovor_ids", [])
                     
                     if igrac_odgovor_id:
                         igrac_odgovori_ids = [igrac_odgovor_id]
@@ -223,7 +223,6 @@ class QuizService(IQuizService):
 
             self.results_collection.insert_one(result_dict)
 
-            
             print(f"✅ Rezultat sačuvan: {ukupno_bodova}/{maksimalno_bodova} bodova ({tacnih_odgovora} tačnih odgovora)")
             
             self._get_email_service().send_quiz_results(
@@ -297,3 +296,38 @@ class QuizService(IQuizService):
         except Exception as e:
             print(f"Greška pri dohvatanju rezultata igrača: {str(e)}")
             return []
+
+
+    def send_quiz_report_to_admin(self, quiz_id: str, admin_email: str) -> Tuple[bool, Optional[str]]:
+        """Generiše PDF izvještaj za kviz i šalje ga administratoru na mail."""
+        try:
+            quiz = self.quizzes_collection.find_one({"_id": ObjectId(quiz_id)})
+            if not quiz:
+                return False, "Kviz nije pronađen"
+
+            results = list(self.results_collection.find({"quiz_id": quiz_id}))
+
+            from Services.PdfReportService import PdfReportService
+            pdf_service = PdfReportService()
+            pdf_bytes = pdf_service.generate_quiz_report_pdf(quiz, results)
+
+            safe_name = str(quiz.get("naziv", "kviz")).strip().replace(" ", "_")
+            filename = f"izvjestaj_{safe_name}_{quiz_id}.pdf"
+
+            ok = self._get_email_service().send_quiz_report(
+                admin_email=admin_email,
+                quiz_naziv=str(quiz.get("naziv", "Kviz")),
+                pdf_bytes=pdf_bytes,
+                filename=filename,
+            )
+
+            if not ok:
+                return False, "Greška pri slanju email-a"
+
+            return True, None
+
+        except Exception as e:
+            print(f"❌ Greška pri generisanju PDF izvještaja: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            return False, f"Greška: {str(e)}"

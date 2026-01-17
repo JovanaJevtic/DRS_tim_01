@@ -113,3 +113,18 @@ class IQuizService(ABC):
             Lista rezultata sortiranih po bodovima
         """
         pass
+
+    @abstractmethod
+    def send_quiz_report_to_admin(self, quiz_id: str, admin_email: str) -> Tuple[bool, Optional[str]]:
+        """
+        Generiše PDF izvještaj o rezultatima kviza i šalje ga administratoru na email.
+
+        Args:
+            quiz_id: ID kviza
+            admin_email: email administratora
+
+        Returns:
+            Tuple[True, None] ako je uspešno
+            Tuple[False, str] ako je greška
+        """
+        pass
