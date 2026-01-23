@@ -5,9 +5,10 @@ from Domain.services.IQuizService import IQuizService
 from Domain.DTOs.CreateQuizDTO import CreateQuizDTO
 from Domain.DTOs.QuizResponseDTO import QuizResponseDTO
 from Domain.DTOs.SubmitQuizDTO import SubmitQuizDTO
-from Domain.DTOs.QuizResultDTO import QuizResultDTO
 from Domain.enums.QuizStatus import QuizStatus
 from Database.MongoConnection import MongoConnection
+from Services.ProcessPoolService import ProcessPoolService
+from Services.ProcessWorkers import process_quiz_results_worker, generate_pdf_report_worker
 
 class QuizService(IQuizService):
     
@@ -15,7 +16,7 @@ class QuizService(IQuizService):
         self.quizzes_collection = MongoConnection.get_collection("quizzes")
         self.results_collection = MongoConnection.get_collection("quiz_results")
         self.email_service = None
-    
+        
     def _get_email_service(self):
         """Lazy loading email servisa (izbegava circular import)"""
         if self.email_service is None:
@@ -24,7 +25,7 @@ class QuizService(IQuizService):
         return self.email_service
     
     def create_quiz(self, quiz_data: dict) -> Tuple[Optional[dict], Optional[str]]:
-        """Kreira novi kviz (validacija je već urađena u Validator-u)"""
+        """Kreira novi kviz"""
         try:
             dto = CreateQuizDTO.from_dict(quiz_data)
             
@@ -40,7 +41,6 @@ class QuizService(IQuizService):
             }
             
             result = self.quizzes_collection.insert_one(quiz_document)
-            
             created_quiz = self.quizzes_collection.find_one({"_id": result.inserted_id})
             
             response = QuizResponseDTO(
@@ -55,7 +55,7 @@ class QuizService(IQuizService):
                 created_at=created_quiz.get("created_at")
             )
             
-            print(f"✅ Kviz '{dto.naziv}' kreiran sa ID: {result.inserted_id}")
+            print(f" Kviz '{dto.naziv}' kreiran sa ID: {result.inserted_id}")
             return response.to_dict(), None
             
         except Exception as e:
@@ -86,14 +86,13 @@ class QuizService(IQuizService):
                 for quiz in quizzes
             ]
         except Exception as e:
-            print(f"❌ Greška pri dohvatanju kvizova: {str(e)}")
+            print(f" Greška pri dohvatanju kvizova: {str(e)}")
             return []
     
     def get_quiz_by_id(self, quiz_id: str) -> Optional[dict]:
         """Dohvata kviz po ID-u"""
         try:
             quiz = self.quizzes_collection.find_one({"_id": ObjectId(quiz_id)})
-            
             if not quiz:
                 return None
             
@@ -110,7 +109,7 @@ class QuizService(IQuizService):
             ).to_dict()
             
         except Exception as e:
-            print(f"❌ Greška pri dohvatanju kviza: {str(e)}")
+            print(f" Greška pri dohvatanju kviza: {str(e)}")
             return None
     
     def approve_quiz(self, quiz_id: str) -> Tuple[bool, Optional[str]]:
@@ -127,11 +126,11 @@ class QuizService(IQuizService):
             if result.modified_count == 0:
                 return False, "Kviz nije pronađen"
             
-            print(f"✅ Kviz {quiz_id} odobren")
+            print(f" Kviz {quiz_id} odobren")
             return True, None
             
         except Exception as e:
-            print(f"❌ Greška pri odobravanju kviza: {str(e)}")
+            print(f" Greška pri odobravanju kviza: {str(e)}")
             return False, f"Greška: {str(e)}"
     
     def reject_quiz(self, quiz_id: str, razlog: str) -> Tuple[bool, Optional[str]]:
@@ -151,11 +150,11 @@ class QuizService(IQuizService):
             if result.modified_count == 0:
                 return False, "Kviz nije pronađen"
             
-            print(f"❌ Kviz {quiz_id} odbijen. Razlog: {razlog}")
+            print(f" Kviz {quiz_id} odbijen. Razlog: {razlog}")
             return True, None
             
         except Exception as e:
-            print(f"❌ Greška pri odbijanju kviza: {str(e)}")
+            print(f" Greška pri odbijanju kviza: {str(e)}")
             return False, f"Greška: {str(e)}"
     
     def delete_quiz(self, quiz_id: str) -> Tuple[bool, Optional[str]]:
@@ -166,78 +165,52 @@ class QuizService(IQuizService):
             if result.deleted_count == 0:
                 return False, "Kviz nije pronađen"
             
-            print(f"🗑️ Kviz {quiz_id} obrisan")
+            print(f" Kviz {quiz_id} obrisan")
             return True, None
             
         except Exception as e:
-            print(f"❌ Greška pri brisanju kviza: {str(e)}")
+            print(f" Greška pri brisanju kviza: {str(e)}")
             return False, f"Greška: {str(e)}"
     
     def process_quiz_submission(self, submission_data: dict) -> Tuple[Optional[dict], Optional[str]]:
-        """Obrađuje odgovore igrača"""
+        """
+         ASINHRONA OBRADA SA PROCESIMA 
+        
+        API odmah vraća odgovor igraču.
+        Obrada se izvršava u posebnom procesu (background).
+        """
         try:
             submit_dto = SubmitQuizDTO.from_dict(submission_data)
             
+            # Proveri da li kviz postoji
             quiz = self.quizzes_collection.find_one({"_id": ObjectId(submit_dto.quiz_id)})
             if not quiz:
                 return None, "Kviz nije pronađen"
             
-            ukupno_bodova = 0
-            maksimalno_bodova = sum(p["bodovi"] for p in quiz["pitanja"])
-            tacnih_odgovora = 0
+            print(f"🚀 Pokretanje ASINHRONE obrade kviza u POSEBNOM PROCESU...")
             
-            for pitanje in quiz["pitanja"]:
-                igrac_odgovor = next(
-                    (o for o in submit_dto.odgovori if o["pitanje_id"] == pitanje["id"]), 
-                    None
-                )
-                
-                if igrac_odgovor:
-                    tacni_odgovori_ids = [
-                        odg["id"] for odg in pitanje["odgovori"] if odg.get("tacan", False)
-                    ]
-                    
-                    igrac_odgovor_id = igrac_odgovor.get("odgovor_id")
-                    igrac_odgovori_ids = igrac_odgovor.get("odgovor_ids", [])
-                    
-                    if igrac_odgovor_id:
-                        igrac_odgovori_ids = [igrac_odgovor_id]
-                    
-                    if set(tacni_odgovori_ids) == set(igrac_odgovori_ids):
-                        ukupno_bodova += pitanje["bodovi"]
-                        tacnih_odgovora += 1
-            
-            result_dto = QuizResultDTO(
-                quiz_id=submit_dto.quiz_id,
-                quiz_naziv=quiz["naziv"],
-                igrac_id=submit_dto.igrac_id,
-                igrac_email=submit_dto.igrac_email,
-                odgovori=submit_dto.odgovori,
-                ukupno_bodova=ukupno_bodova,
-                maksimalno_bodova=maksimalno_bodova,
-                vrijeme_utroseno_sekunde=submit_dto.vrijeme_utroseno_sekunde
+            async_result = ProcessPoolService.submit_task(
+                process_quiz_results_worker,
+                submit_dto.quiz_id,
+                submit_dto.igrac_id,
+                submit_dto.igrac_email,
+                submit_dto.odgovori,
+                submit_dto.vrijeme_utroseno_sekunde
             )
             
-            result_dict = result_dto.to_dict()
-            result_dict["created_at"] = datetime.utcnow()
-
-            self.results_collection.insert_one(result_dict)
-
-            print(f"✅ Rezultat sačuvan: {ukupno_bodova}/{maksimalno_bodova} bodova ({tacnih_odgovora} tačnih odgovora)")
+            print(f" Obrada pokrenuta u background procesu! Igrač može nastaviti rad.")
+            print(f" Email sa rezultatima će biti poslat nakon završetka obrade.")
             
-            self._get_email_service().send_quiz_results(
-                igrac_email=submit_dto.igrac_email,
-                quiz_naziv=quiz["naziv"],
-                ukupno_bodova=ukupno_bodova,
-                maksimalno_bodova=maksimalno_bodova,
-                procenat=result_dto.procenat,
-                vrijeme_utroseno_sekunde=submit_dto.vrijeme_utroseno_sekunde
-            )
-            
-            return result_dto.to_dict(), None
+            # Vrati odmah odgovor (igrač ne čeka!)
+            return {
+                "quiz_id": submit_dto.quiz_id,
+                "quiz_naziv": quiz["naziv"],
+                "status": "processing",
+                "message": "Obrada odgovora je u toku. Rezultati će biti poslati na email."
+            }, None
             
         except Exception as e:
-            print(f"❌ Greška pri obradi rezultata: {str(e)}")
+            print(f"❌ Greška pri pokretanju obrade: {str(e)}")
             import traceback
             traceback.print_exc()
             return None, f"Greška: {str(e)}"
@@ -253,20 +226,18 @@ class QuizService(IQuizService):
                 ])
             )
 
-            leaderboard = []
-
-            for idx, r in enumerate(results, start=1):
-                leaderboard.append({
+            return [
+                {
                     "rank": idx,
                     "igrac_email": r.get("igrac_email"),
                     "bodovi": r.get("ukupno_bodova"),
                     "vrijeme_utroseno": r.get("vrijeme_utroseno_sekunde")
-                })
-
-            return leaderboard
+                }
+                for idx, r in enumerate(results, start=1)
+            ]
 
         except Exception as e:
-            print(f"Greška pri dohvatanju rang liste: {str(e)}")
+            print(f"❌ Greška pri dohvatanju rang liste: {str(e)}")
             return []
             
     def get_results_for_player(self, igrac_id: int) -> List[dict]:
@@ -278,10 +249,8 @@ class QuizService(IQuizService):
                .sort("created_at", -1)
             )
 
-            formatted = []
-
-            for r in results:
-                formatted.append({
+            return [
+                {
                     "quiz_id": r.get("quiz_id"),
                     "quiz_naziv": r.get("quiz_naziv"),
                     "ukupno_bodova": r.get("ukupno_bodova"),
@@ -289,45 +258,41 @@ class QuizService(IQuizService):
                     "procenat": r.get("procenat"),
                     "vrijeme_utroseno_sekunde": r.get("vrijeme_utroseno_sekunde"),
                     "created_at": r.get("created_at")
-                })
-
-            return formatted
+                }
+                for r in results
+            ]
 
         except Exception as e:
-            print(f"Greška pri dohvatanju rezultata igrača: {str(e)}")
+            print(f"❌ Greška pri dohvatanju rezultata igrača: {str(e)}")
             return []
 
-
     def send_quiz_report_to_admin(self, quiz_id: str, admin_email: str) -> Tuple[bool, Optional[str]]:
-        """Generiše PDF izvještaj za kviz i šalje ga administratoru na mail."""
+        """
+        ⚡ ASINHRONO GENERISANJE PDF-a U PROCESU ⚡
+        
+        API odmah vraća odgovor.
+        PDF se generiše u background procesu.
+        """
         try:
             quiz = self.quizzes_collection.find_one({"_id": ObjectId(quiz_id)})
             if not quiz:
                 return False, "Kviz nije pronađen"
 
-            results = list(self.results_collection.find({"quiz_id": quiz_id}))
-
-            from Services.PdfReportService import PdfReportService
-            pdf_service = PdfReportService()
-            pdf_bytes = pdf_service.generate_quiz_report_pdf(quiz, results)
-
-            safe_name = str(quiz.get("naziv", "kviz")).strip().replace(" ", "_")
-            filename = f"izvjestaj_{safe_name}_{quiz_id}.pdf"
-
-            ok = self._get_email_service().send_quiz_report(
-                admin_email=admin_email,
-                quiz_naziv=str(quiz.get("naziv", "Kviz")),
-                pdf_bytes=pdf_bytes,
-                filename=filename,
+            print(f"📄 Pokretanje PDF generisanja u POSEBNOM PROCESU...")
+            
+            async_result = ProcessPoolService.submit_task(
+                generate_pdf_report_worker,
+                quiz_id,
+                admin_email
             )
-
-            if not ok:
-                return False, "Greška pri slanju email-a"
-
+            
+            print(f"PDF generisanje pokrenuto u background procesu!")
+            print(f"PDF izvještaj će stići na email nakon završetka.")
+            
             return True, None
 
         except Exception as e:
-            print(f"❌ Greška pri generisanju PDF izvještaja: {str(e)}")
+            print(f"Greška pri pokretanju PDF generisanja: {str(e)}")
             import traceback
             traceback.print_exc()
             return False, f"Greška: {str(e)}"
