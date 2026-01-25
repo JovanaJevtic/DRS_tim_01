@@ -1,5 +1,6 @@
 from flask import Blueprint, request, jsonify
 from Services.QuizService import QuizService
+from Services.RedisService import RedisService
 from Domain.services.IServerCommunicationService import IServerCommunicationService
 from Services.ServerCommunicationService import ServerCommunicationService
 from Domain.services.IQuizService import IQuizService
@@ -34,7 +35,8 @@ def create_quiz():
             return jsonify({"success": False, "message": error}), 400
         
         server_comm.notify_new_quiz(quiz)
-        
+        RedisService.invalidate_pattern("quizzes:*")
+
         return jsonify({"success": True, "quiz": quiz}), 201
         
     except Exception as e:
@@ -44,9 +46,22 @@ def create_quiz():
 @quiz_bp.route("/quiz/all", methods=["GET"])
 @authenticate
 def get_all_quizzes():
-    """Dohvata sve kvizove - filtriranje po ulozi"""
+    """Dohvata sve kvizove - filtriranje po ulozi (sa Redis kešom)"""
     try:
         user_role = request.user.get("uloga")
+        user_id = request.user.get("id")
+        
+        if user_role == "ADMINISTRATOR":
+            status_filter = request.args.get("status")
+            cache_key = f"quizzes:admin:{status_filter or 'all'}"
+        elif user_role == "MODERATOR":
+            cache_key = f"quizzes:moderator:{user_id}"
+        else:
+            cache_key = "quizzes:approved"
+        
+        cached_quizzes = RedisService.get(cache_key)
+        if cached_quizzes is not None:
+            return jsonify({"success": True, "quizzes": cached_quizzes, "from_cache": True}), 200
         
         if user_role == "ADMINISTRATOR":
             status_filter = request.args.get("status")
@@ -60,7 +75,9 @@ def get_all_quizzes():
         else:
             quizzes = quiz_service.get_all_quizzes(status="APPROVED")
         
-        return jsonify({"success": True, "quizzes": quizzes}), 200
+        RedisService.set(cache_key, quizzes, ttl=300)
+        
+        return jsonify({"success": True, "quizzes": quizzes, "from_cache": False}), 200
         
     except Exception as e:
         return jsonify({"success": False, "message": str(e)}), 500
@@ -90,12 +107,20 @@ def get_my_results():
 @quiz_bp.route("/quiz/<quiz_id>", methods=["GET"])
 @authenticate
 def get_quiz_by_id(quiz_id):
-    """Dohvata kviz po ID-u"""
+    """Dohvata kviz po ID-u (sa Redis kešom)"""
     try:
-        quiz = quiz_service.get_quiz_by_id(quiz_id)
+        cache_key = f"quiz:{quiz_id}"
+        cached_quiz = RedisService.get(cache_key)
         
-        if not quiz:
-            return jsonify({"success": False, "message": "Kviz nije pronađen"}), 404
+        if cached_quiz is not None:
+            quiz = cached_quiz
+        else:
+            quiz = quiz_service.get_quiz_by_id(quiz_id)
+            
+            if not quiz:
+                return jsonify({"success": False, "message": "Kviz nije pronađen"}), 404
+            
+            RedisService.set(cache_key, quiz, ttl=600)
         
         user_role = request.user.get("uloga")
         
@@ -115,7 +140,6 @@ def get_quiz_by_id(quiz_id):
     except Exception as e:
         return jsonify({"success": False, "message": str(e)}), 500
 
-
 @quiz_bp.route("/quiz/<quiz_id>/approve", methods=["PATCH"])
 @authenticate
 @authorize("ADMINISTRATOR")
@@ -132,7 +156,8 @@ def approve_quiz(quiz_id):
             return jsonify({"success": False, "message": error}), 400
         
         server_comm.notify_quiz_approved(quiz_id, quiz['autor_id'])
-        
+        RedisService.invalidate_pattern("quizzes:*")
+        RedisService.delete(f"quiz:{quiz_id}")
         return jsonify({"success": True, "message": "Kviz odobren"}), 200
         
     except Exception as e:
@@ -206,6 +231,8 @@ def submit_quiz(quiz_id):
         
         if error:
             return jsonify({"success": False, "message": error}), 400
+
+        RedisService.delete(f"leaderboard:{quiz_id}")
         
         return jsonify({
             "success": True, 
@@ -216,19 +243,25 @@ def submit_quiz(quiz_id):
     except Exception as e:
         return jsonify({"success": False, "message": str(e)}), 500
 
-
 @quiz_bp.route("/quiz/<quiz_id>/leaderboard", methods=["GET"])
 @authenticate
 def get_leaderboard(quiz_id):
-    """Dohvata rang listu za kviz"""
+    """Dohvata rang listu za kviz (sa Redis kešom)"""
     try:
+        cache_key = f"leaderboard:{quiz_id}"
+        cached_leaderboard = RedisService.get(cache_key)
+        
+        if cached_leaderboard is not None:
+            return jsonify({"success": True, "leaderboard": cached_leaderboard, "from_cache": True}), 200
+        
         leaderboard = quiz_service.get_leaderboard(quiz_id)
         
-        return jsonify({"success": True, "leaderboard": leaderboard}), 200
+        RedisService.set(cache_key, leaderboard, ttl=120)
+        
+        return jsonify({"success": True, "leaderboard": leaderboard, "from_cache": False}), 200
         
     except Exception as e:
         return jsonify({"success": False, "message": str(e)}), 500
-    
 
 @quiz_bp.route("/quiz/<quiz_id>/report", methods=["POST"])
 @authenticate

@@ -1,4 +1,5 @@
 from dotenv import load_dotenv
+from Services.RedisService import RedisService  
 from pathlib import Path
 env_path = Path(__file__).parent.parent / ".env"
 load_dotenv(dotenv_path=env_path)
@@ -42,6 +43,7 @@ def create_app():
 
     mail.init_app(app)
     MongoConnection.initialize()
+    RedisService.initialize()
 
     app.register_blueprint(quiz_bp, url_prefix="/api/v1")
 
