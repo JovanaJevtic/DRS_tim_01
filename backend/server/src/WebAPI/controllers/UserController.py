@@ -13,9 +13,12 @@ from werkzeug.utils import secure_filename
 from Services.EmailService import EmailService
 from WebSocket.Events import emit_role_changed
 
-UPLOAD_FOLDER = "uploads"
+
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+UPLOAD_FOLDER = os.path.join(BASE_DIR, "uploads")
+
 ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg", "gif"}
-MAX_FILE_SIZE = 5 * 1024 * 1024  # 5MB
+MAX_FILE_SIZE = 5 * 1024 * 1024  
 
 def allowed_file(filename):
     return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
@@ -24,6 +27,8 @@ def create_user_controller(user_service: IUserService):
     user_bp = Blueprint("user_controller", __name__)
     
     email_service = EmailService()
+    
+    print(f"📁 UPLOAD_FOLDER: {os.path.abspath(UPLOAD_FOLDER)}")
 
     # -------------------- ADMIN ENDPOINTS --------------------
     @user_bp.route("/users", methods=["GET"])
@@ -61,9 +66,9 @@ def create_user_controller(user_service: IUserService):
         )
         
         if email_sent:
-            print(f"✅ Email o promeni uloge poslat korisniku: {user.email}")
+            print(f" Email o promeni uloge poslat korisniku: {user.email}")
         else:
-            print(f"⚠️ Email nije poslat, ali uloga je promenjena")
+            print(f" Email nije poslat, ali uloga je promenjena")
         
         # Emituj WebSocket event
         emit_role_changed(user_id, new_role)
@@ -173,12 +178,16 @@ def create_user_controller(user_service: IUserService):
             size_mb = file_length / (1024 * 1024)
             return jsonify({"success": False, "message": f"Fajl je prevelik ({size_mb:.1f}MB). Maksimalna veličina: 5MB"}), 400
 
+        os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
         filename = secure_filename(file.filename)
         unique_filename = f"{int(time.time())}_{filename}"
         upload_path = os.path.join(UPLOAD_FOLDER, unique_filename)
 
-        os.makedirs(UPLOAD_FOLDER, exist_ok=True)
         file.save(upload_path)
+
+        if not os.path.exists(upload_path):
+            return jsonify({"success": False, "message": "Greška pri čuvanju fajla"}), 500
 
         user_id = request.user["id"]
         user = db.session.get(User, user_id)
@@ -186,6 +195,12 @@ def create_user_controller(user_service: IUserService):
         db.session.commit()
 
         image_url = f"/api/v1/uploads/{unique_filename}"
+        print(f" Fajl sačuvan, URL: {image_url}")
         return jsonify({"success": True, "profile_image": image_url}), 200
+
+    @user_bp.route("/uploads/<path:filename>", methods=["GET"])
+    def serve_uploaded_file(filename):
+        full_path = os.path.join(UPLOAD_FOLDER, filename)
+        return send_from_directory(UPLOAD_FOLDER, filename)
 
     return user_bp
