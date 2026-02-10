@@ -14,13 +14,24 @@ from WebAPI.controllers.InternalController import internal_bp
 
 load_dotenv()
 
+ENV = os.getenv("APP_ENV", "local")
+
+DB_HOST = (
+    os.getenv("DB_HOST_DOCKER")
+    if ENV == "docker"
+    else os.getenv("DB_HOST_LOCAL")
+)
+
+DB_PORT = int(os.getenv("DB_PORT"))
+
 
 def create_app():
     app = Flask(__name__)
 
     CORS(app, resources={
         r"/api/*": {
-            "origins": ["http://localhost:5173"],
+            "origins": ["http://localhost:3000",
+                        "http://localhost:5173"],
             "methods": ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
             "allow_headers": ["Content-Type", "Authorization"]
         }
