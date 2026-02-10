@@ -1,0 +1,81 @@
+services:
+  quizserver:
+    build: ./quizserver
+    container_name: quizserver
+    ports:
+      - "5001:5001"
+    env_file:
+      - ./quizserver/.env.docker
+    environment:
+      - APP_ENV=docker
+    depends_on:
+      - mongo
+      - redis
+    networks:
+      - kviz-net
+
+  mongo:
+    image: mongo:7
+    container_name: quiz-mongo
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - kviz-net
+
+  redis:
+    image: redis:7
+    container_name: quiz-redis
+    networks:
+      - kviz-net
+
+  mysql:
+    image: mysql:8
+    container_name: auth-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: 1234
+      MYSQL_DATABASE: kviz_platforma
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - kviz-net
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  server:
+    build: ./server
+    container_name: auth-server
+    ports:
+      - "5000:5000"
+    env_file:
+      - ./server/.env
+    environment:
+      APP_ENV: docker
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - kviz-net
+  
+  frontend:
+    build: ../client
+    container_name: kviz-frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - server
+    networks:
+      - kviz-net
+
+
+networks:
+  kviz-net:
+    driver: bridge
+
+volumes:
+  mongo_data:
+  mysql_data:

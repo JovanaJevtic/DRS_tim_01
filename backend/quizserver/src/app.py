@@ -1,8 +1,6 @@
 from dotenv import load_dotenv
 from Services.RedisService import RedisService  
 from pathlib import Path
-env_path = Path(__file__).parent.parent / ".env"
-load_dotenv(dotenv_path=env_path)
 from flask import Flask
 from flask_cors import CORS
 from Services.EmailService import mail
@@ -11,6 +9,22 @@ import atexit
 import signal
 from Database.MongoConnection import MongoConnection
 from WebAPI.controllers.QuizController import quiz_bp
+
+BASE_DIR = Path(__file__).resolve().parent.parent
+
+ENV = os.getenv("APP_ENV", "local")
+
+if ENV == "docker":
+    print("🐳 QuizServer running in DOCKER mode")
+    load_dotenv(BASE_DIR / ".env.docker", override=True)
+else:
+    print("💻 QuizServer running in LOCAL mode")
+    load_dotenv(BASE_DIR / ".env.local", override=True)
+
+JWT_SECRET = os.getenv("JWT_SECRET")
+
+if not JWT_SECRET:
+    raise RuntimeError("❌ JWT_SECRET is NOT loaded!")
 
 def create_app():
     app = Flask(__name__)
@@ -21,6 +35,7 @@ def create_app():
             r"/api/*": {
                 "origins": [
                     "http://localhost:5173",
+                    "http://localhost:3000",  
                     "http://localhost:5000",
                 ],
                 "methods": ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
@@ -29,8 +44,7 @@ def create_app():
         },
     )
 
-    print("📧 .env path:", env_path)
-    print("📧 .env exists:", env_path.exists())
+
     print("📧 MAIL_USERNAME:", os.getenv("MAIL_USERNAME"))
     print("📧 MAIL_DEFAULT_SENDER:", os.getenv("MAIL_DEFAULT_SENDER"))
 
