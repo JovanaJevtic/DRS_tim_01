@@ -2,10 +2,7 @@ from flask_socketio import SocketIO
 
 socketio = SocketIO(
     async_mode="eventlet",
-    cors_allowed_origins=[
-        "http://localhost:3000",
-        "http://localhost:5173"
-    ]
+    cors_allowed_origins="*"
 )
 
 def init_socketio(app):

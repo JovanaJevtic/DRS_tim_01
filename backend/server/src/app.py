@@ -28,14 +28,16 @@ DB_PORT = int(os.getenv("DB_PORT"))
 def create_app():
     app = Flask(__name__)
 
-    CORS(app, resources={
-        r"/api/*": {
-            "origins": ["http://localhost:3000",
-                        "http://localhost:5173"],
-            "methods": ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-            "allow_headers": ["Content-Type", "Authorization"]
-        }
-    })
+    #CORS(app, resources={
+    #    r"/api/*": {
+    #        "origins": ["http://localhost:3000",
+    #                    "http://localhost:5173",
+    #                    "http://192.168.24.1:3000"],
+    #        "methods": ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    #        "allow_headers": ["Content-Type", "Authorization"]
+    #    }
+    #})
+    CORS(app, supports_credentials=True)
 
     app.config['MAIL_SERVER'] = os.getenv('MAIL_SERVER', 'smtp.gmail.com')
     app.config['MAIL_PORT'] = int(os.getenv('MAIL_PORT', 587))
@@ -48,7 +50,10 @@ def create_app():
 
     initialize_connection(app)
 
-    init_socketio(app)
+    socketio.init_app(
+        app,
+        cors_allowed_origins="*"
+    )
 
     user_service = UserService()
     user_controller = create_user_controller(user_service)

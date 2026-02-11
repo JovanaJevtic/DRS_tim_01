@@ -29,20 +29,7 @@ if not JWT_SECRET:
 def create_app():
     app = Flask(__name__)
 
-    CORS(
-        app,
-        resources={
-            r"/api/*": {
-                "origins": [
-                    "http://localhost:5173",
-                    "http://localhost:3000",  
-                    "http://localhost:5000",
-                ],
-                "methods": ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-                "allow_headers": ["Content-Type", "Authorization"],
-            }
-        },
-    )
+    CORS(app, supports_credentials=True)
 
 
     print("📧 MAIL_USERNAME:", os.getenv("MAIL_USERNAME"))
