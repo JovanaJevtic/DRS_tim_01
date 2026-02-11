@@ -72,6 +72,7 @@ def create_app():
     # Register routes
     app.register_blueprint(quiz_bp, url_prefix="/api/v1")
 
+
     # Health check
     @app.route("/health", methods=["GET"])
     def health_check():
