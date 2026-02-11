@@ -1,0 +1,52 @@
+name: Build and Push Server Image
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "backend/server/**"
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Checkout kod
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # 2. Login na GHCR
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GHCR_TOKEN }}
+
+      # 3. Ekstraktuj metadata
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository_owner }}/kviz-server
+          tags: |
+            type=raw,value=latest
+
+      # 4. Build i Push image
+      - name: Build and Push image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend/server
+          file: ./backend/server/Dockerfile.prod
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+
+      # 5. Trigger Render Deploy Hook
+      - name: Trigger Render Deploy
+        run: |
+          curl -X POST ${{ secrets.RENDER_DEPLOY_HOOK_SERVER }}

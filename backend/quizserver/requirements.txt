@@ -7,3 +7,4 @@ python-dotenv
 pyjwt
 requests
 reportlab
+gunicorn==21.2.0
