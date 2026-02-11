@@ -47,6 +47,6 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
 
       # 5. Trigger Render Deploy Hook
-      - name: Trigger Render Deploy
-        run: |
-          curl -X POST ${{ secrets.RENDER_DEPLOY_HOOK_SERVER }}
+   #   - name: Trigger Render Deploy
+    #    run: |
+     #     curl -X POST ${{ secrets.RENDER_DEPLOY_HOOK_SERVER }}

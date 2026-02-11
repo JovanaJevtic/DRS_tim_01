@@ -50,6 +50,6 @@ jobs:
             VITE_QUIZ_API=${{ secrets.VITE_QUIZ_API }}
 
       # 5. Trigger Render Deploy Hook
-      - name: Trigger Render Deploy
-        run: |
-          curl -X POST ${{ secrets.RENDER_DEPLOY_HOOK_FRONTEND }}
+     # - name: Trigger Render Deploy
+      #  run: |
+       #   curl -X POST ${{ secrets.RENDER_DEPLOY_HOOK_FRONTEND }}
