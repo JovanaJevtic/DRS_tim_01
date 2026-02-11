@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import quizService from "../services/quizService";
+import { v4 as uuidv4 } from "uuid";
 
 type Answer = {
   id: string;
@@ -92,8 +93,8 @@ const CreateQuiz = () => {
         tekst: "",
         bodovi: 10,
         odgovori: [
-          { id: crypto.randomUUID(), tekst: "", tacan: false },
-          { id: crypto.randomUUID(), tekst: "", tacan: false },
+          { id: uuidv4(), tekst: "", tacan: false },
+          { id: uuidv4(), tekst: "", tacan: false },
         ],
       },
     ]);
@@ -132,7 +133,7 @@ const CreateQuiz = () => {
   const addAnswer = (qIndex: number) => {
     const copy = [...pitanja];
     copy[qIndex].odgovori.push({
-      id: crypto.randomUUID(),
+      id: uuidv4(),
       tekst: "",
       tacan: false,
     });
